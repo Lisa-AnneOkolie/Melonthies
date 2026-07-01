@@ -1045,15 +1045,11 @@
 
   // Countdown to August 3, 2026, West Africa Time (UTC+1)
   const launchDate = new Date('2026-08-03T00:00:00+01:00').getTime();
-  const startDate = new Date('2026-06-01T00:00:00+01:00').getTime(); // reference start for wedge fill
 
   const daysEl = document.getElementById('cd-days');
   const hoursEl = document.getElementById('cd-hours');
   const minsEl = document.getElementById('cd-mins');
   const secsEl = document.getElementById('cd-secs');
-  const progressPath = document.getElementById('wedgeProgress');
-  const pathLength = progressPath.getTotalLength();
-  progressPath.style.strokeDasharray = pathLength;
 
   function pad(n){ return String(n).padStart(2, '0'); }
 
@@ -1066,7 +1062,6 @@
       hoursEl.textContent = '00';
       minsEl.textContent = '00';
       secsEl.textContent = '00';
-      progressPath.style.strokeDashoffset = 0;
       return;
     }
 
@@ -1079,11 +1074,6 @@
     hoursEl.textContent = pad(hours);
     minsEl.textContent = pad(mins);
     secsEl.textContent = pad(secs);
-
-    const totalSpan = launchDate - startDate;
-    const elapsed = Math.min(Math.max(now - startDate, 0), totalSpan);
-    const fraction = elapsed / totalSpan;
-    progressPath.style.strokeDashoffset = pathLength * (1 - fraction);
   }
 
   tick();
