@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Explore the Melonthies gallery — smoothies, pop-ups, customers, and behind-the-scenes moments.">
+  <title>Gallery | Melonthies</title>
+
+  <!--
+    IMPORTANT:
+    This page uses your existing website stylesheet.
+    Change "style.css" below if your main CSS file has a different name.
+  -->
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* Gallery page additions */
+    .gallery-page {
+      padding: 120px 6% 80px;
+      min-height: 100vh;
+    }
+
+    .gallery-header {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 45px;
+    }
+
+    .gallery-header h1 {
+      margin-bottom: 12px;
+    }
+
+    .gallery-header p {
+      margin: 0 auto;
+      opacity: 0.8;
+    }
+
+    .gallery-filters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+
+    .gallery-filter {
+      border: 1px solid currentColor;
+      background: transparent;
+      padding: 10px 20px;
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+      transition: 0.25s ease;
+    }
+
+    .gallery-filter:hover,
+    .gallery-filter.active {
+      background: currentColor;
+      color: white;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .gallery-item {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      border-radius: 18px;
+      cursor: pointer;
+      background: #f2f2f2;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.06);
+    }
+
+    .gallery-item.hidden {
+      display: none;
+    }
+
+    .gallery-empty {
+      text-align: center;
+      padding: 50px 20px;
+      display: none;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.92);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .lightbox.open {
+      display: flex;
+    }
+
+    .lightbox-image {
+      max-width: 92vw;
+      max-height: 86vh;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .lightbox-close,
+    .lightbox-prev,
+    .lightbox-next {
+      position: absolute;
+      border: 0;
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 24px;
+      display: grid;
+      place-items: center;
+      transition: 0.2s ease;
+    }
+
+    .lightbox-close:hover,
+    .lightbox-prev:hover,
+    .lightbox-next:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .lightbox-close {
+      top: 22px;
+      right: 22px;
+    }
+
+    .lightbox-prev {
+      left: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .lightbox-next {
+      right: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    @media (max-width: 800px) {
+      .gallery-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .gallery-page {
+        padding: 100px 5% 60px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .gallery-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .gallery-filter {
+        padding: 8px 14px;
+        font-size: 14px;
+      }
+
+      .lightbox-prev {
+        left: 10px;
+      }
+
+      .lightbox-next {
+        right: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!--
+    ============================================================
+    MELONTHIES GALLERY
+    ============================================================
+    To add a new photo:
+    1. Upload the image into the "gallery" folder in your repo.
+    2. Add ONE new object to the galleryImages list below.
+    3. Commit your changes to GitHub.
+
+    Example:
+    {
+      src: "gallery/new-photo.jpg",
+      category: "smoothies",
+      alt: "Melonthies watermelon smoothie"
+    }
+
+    Available categories:
+    smoothies
+    pop-ups
+    customers
+    behind-the-scenes
+
+    You can also use "all" if you don't want the image filtered.
+    ============================================================
+  -->
+
+  <!-- Replace this navigation with your existing website navigation
+       if you want it to match your current header exactly. -->
+  <header>
+    <nav style="display:flex; justify-content:space-between; align-items:center; padding:20px 6%; position:absolute; top:0; left:0; right:0; z-index:10;">
+      <a href="index.html" style="text-decoration:none; font-weight:700;">MELONTHIES</a>
+
+      <div style="display:flex; gap:20px; align-items:center;">
+        <a href="index.html">Home</a>
+        <a href="gallery.html" aria-current="page">Gallery</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="gallery-page">
+
+    <section class="gallery-header">
+      <h1>Melonthies Gallery</h1>
+      <p>Fresh moments, good vibes, and watermelon everything.</p>
+    </section>
+
+    <div class="gallery-filters" aria-label="Gallery filters">
+      <button class="gallery-filter active" data-filter="all">All</button>
+      <button class="gallery-filter" data-filter="smoothies">Smoothies</button>
+      <button class="gallery-filter" data-filter="pop-ups">Pop-Ups</button>
+      <button class="gallery-filter" data-filter="customers">Customers</button>
+      <button class="gallery-filter" data-filter="behind-the-scenes">Behind the Scenes</button>
+    </div>
+
+    <section
+      class="gallery-grid"
+      id="galleryGrid"
+      aria-label="Melonthies photo gallery">
+    </section>
+
+    <div class="gallery-empty" id="galleryEmpty">
+      <p>No photos in this category yet.</p>
+    </div>
+
+  </main>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+    <button class="lightbox-close" id="lightboxClose" aria-label="Close image viewer">&times;</button>
+    <button class="lightbox-prev" id="lightboxPrev" aria-label="Previous image">&#10094;</button>
+    <img class="lightbox-image" id="lightboxImage" src="" alt="">
+    <button class="lightbox-next" id="lightboxNext" aria-label="Next image">&#10095;</button>
+  </div>
+
+  <script>
+    /*
+      ============================================================
+      ADD YOUR PHOTOS HERE
+      ============================================================
+
+      Example:
+
+      {
+        src: "gallery/smoothie-01.jpg",
+        category: "smoothies",
+        alt: "Melonthies watermelon smoothie"
+      }
+
+      The image file must exist inside your GitHub repository's
+      "gallery" folder.
+
+      File names are case-sensitive on GitHub Pages.
+      ============================================================
+    */
+
+    const galleryImages = [
+      // Add your photos here.
+
+      // Example:
+      // {
+      //   src: "gallery/smoothie-01.jpg",
+      //   category: "smoothies",
+      //   alt: "Melonthies watermelon smoothie"
+      // },
+
+      // {
+      //   src: "gallery/popup-01.jpg",
+      //   category: "pop-ups",
+      //   alt: "Melonthies pop-up event"
+      // },
+
+      // {
+      //   src: "gallery/customer-01.jpg",
+      //   category: "customers",
+      //   alt: "Customer enjoying Melonthies"
+      // }
+    ];
+
+    const galleryGrid = document.getElementById("galleryGrid");
+    const galleryEmpty = document.getElementById("galleryEmpty");
+    const filterButtons = document.querySelectorAll(".gallery-filter");
+
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImage = document.getElementById("lightboxImage");
+    const lightboxClose = document.getElementById("lightboxClose");
+    const lightboxPrev = document.getElementById("lightboxPrev");
+    const lightboxNext = document.getElementById("lightboxNext");
+
+    let currentFilter = "all";
+    let visibleImages = [];
+    let currentIndex = 0;
+
+    function renderGallery() {
+      galleryGrid.innerHTML = "";
+
+      visibleImages = galleryImages.filter(image => {
+        return currentFilter === "all" ||
+               image.category === currentFilter ||
+               image.category === "all";
+      });
+
+      galleryEmpty.style.display = visibleImages.length ? "none" : "block";
+
+      visibleImages.forEach((image, index) => {
+        const item = document.createElement("article");
+        item.className = "gallery-item";
+
+        const img = document.createElement("img");
+        img.src = image.src;
+        img.alt = image.alt || "Melonthies gallery image";
+        img.loading = "lazy";
+
+        item.appendChild(img);
+
+        item.addEventListener("click", () => {
+          openLightbox(index);
+        });
+
+        galleryGrid.appendChild(item);
+      });
+    }
+
+    function openLightbox(index) {
+      if (!visibleImages.length) return;
+
+      currentIndex = index;
+      lightboxImage.src = visibleImages[currentIndex].src;
+      lightboxImage.alt = visibleImages[currentIndex].alt || "Melonthies gallery image";
+
+      lightbox.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove("open");
+      document.body.style.overflow = "";
+      lightboxImage.src = "";
+    }
+
+    function showNext() {
+      if (!visibleImages.length) return;
+
+      currentIndex = (currentIndex + 1) % visibleImages.length;
+      lightboxImage.src = visibleImages[currentIndex].src;
+      lightboxImage.alt = visibleImages[currentIndex].alt || "Melonthies gallery image";
+    }
+
+    function showPrevious() {
+      if (!visibleImages.length) return;
+
+      currentIndex =
+        (currentIndex - 1 + visibleImages.length) % visibleImages.length;
+
+      lightboxImage.src = visibleImages[currentIndex].src;
+      lightboxImage.alt = visibleImages[currentIndex].alt || "Melonthies gallery image";
+    }
+
+    filterButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        filterButtons.forEach(btn => btn.classList.remove("active"));
+        button.classList.add("active");
+
+        currentFilter = button.dataset.filter;
+        renderGallery();
+      });
+    });
+
+    lightboxClose.addEventListener("click", closeLightbox);
+    lightboxNext.addEventListener("click", showNext);
+    lightboxPrev.addEventListener("click", showPrevious);
+
+    lightbox.addEventListener("click", (event) => {
+      if (event.target === lightbox) {
+        closeLightbox();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (!lightbox.classList.contains("open")) return;
+
+      if (event.key === "Escape") closeLightbox();
+      if (event.key === "ArrowRight") showNext();
+      if (event.key === "ArrowLeft") showPrevious();
+    });
+
+    renderGallery();
+  </script>
+
+</body>
+</html>
