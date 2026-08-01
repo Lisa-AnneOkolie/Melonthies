@@ -27,13 +27,96 @@
     --radius-md: 18px;
     --container: 1160px;
   }
+  .install-sheet{
+    position:fixed;
+    left:50%;
+    bottom:0;
+    width:100%; max-width:480px;
+    background:var(--rind);
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+    padding:28px 26px calc(24px + env(safe-area-inset-bottom));
+    box-shadow:0 -16px 40px rgba(0,0,0,0.22);
+    transform:translate(-50%, 110%);
+    transition:transform 0.32s cubic-bezier(.22,1,.36,1);
+    font-family:var(--body);
+    z-index:1000;
+  }
+  .install-sheet.open{ transform:translate(-50%, 0); }
+
+  .sheet-top{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    margin-bottom:20px;
+  }
+  .sheet-title{
+    font-family:var(--display); font-weight:800; letter-spacing:-0.01em;
+    font-size:1.5rem; color:var(--white); margin:0;
+  }
+  .sheet-title em{ font-style:normal; color:var(--flesh); }
+  .close-btn{
+    background:rgba(255,255,255,0.1); border:none; color:var(--flesh-soft);
+    width:32px; height:32px; border-radius:50%;
+    font-size:16px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition:background 0.15s ease, color 0.15s ease;
+  }
+  .close-btn:hover{ background:var(--watermelon); color:var(--white); }
+  .close-btn:focus-visible{ outline:3px solid var(--flesh); outline-offset:3px; }
+
+  .brand-row{
+    display:flex; align-items:center; gap:14px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:var(--radius-md);
+    padding:14px; margin-bottom:22px;
+  }
+  .brand-icon{
+    width:52px; height:52px; border-radius:14px; flex-shrink:0;
+    background:linear-gradient(160deg,#F7716B,var(--watermelon));
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 16px rgba(232,71,63,0.3);
+  }
+  .brand-icon span{
+    font-family:var(--display); font-weight:800; font-size:1.35rem; color:var(--white);
+  }
+  .brand-copy{ min-width:0; }
+  .brand-name{ font-family:var(--display); font-weight:800; font-size:1.05rem; color:var(--white); }
+  .brand-name em{ font-style:normal; color:var(--flesh); }
+  .brand-url{ font-size:0.85rem; color:var(--flesh-soft); margin-top:2px; font-weight:600; opacity:0.85; }
+
+  .steps{ list-style:none; margin:0 0 22px; padding:0; display:flex; flex-direction:column; gap:14px; }
+  .steps li{ display:flex; align-items:center; gap:12px; color:rgba(255,255,255,0.85); font-size:0.95rem; line-height:1.4; }
+  .step-num{
+    width:24px; height:24px; flex-shrink:0; border-radius:50%;
+    background:rgba(255,255,255,0.12); color:var(--flesh);
+    font-family:var(--display); font-size:0.72rem; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-pill{
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.16); border-radius:8px;
+    padding:3px 9px; font-size:0.85rem; font-weight:700; color:var(--white);
+    white-space:nowrap;
+  }
+
+  .cta-row{ display:flex; gap:10px; }
+  .btn{
+    flex:1; font-family:var(--body); font-weight:700; font-size:0.95rem;
+    padding:14px 16px; border-radius:999px; border:2px solid transparent;
+    cursor:pointer; transition:transform 0.18s ease, background 0.18s ease;
+  }
+  .btn:hover{ transform:translateY(-2px); }
+  .btn-primary{ background:var(--watermelon); color:var(--white); box-shadow:0 8px 20px rgba(232,71,63,0.3); }
+  .btn-primary:hover{ background:var(--watermelon-deep); }
+  .btn-ghost{ background:transparent; border-color:rgba(255,255,255,0.3); color:var(--white); }
+  .btn-ghost:hover{ background:rgba(255,255,255,0.1); }
+  .btn:focus-visible{ outline:3px solid var(--flesh); outline-offset:3px; } 
 
   *{margin:0;padding:0;box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   @media (prefers-reduced-motion: reduce){
     html{scroll-behavior:auto;}
     *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
-  }
+  } 
 
   body{
     font-family:var(--body);

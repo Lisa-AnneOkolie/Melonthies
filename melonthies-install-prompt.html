@@ -35,49 +35,27 @@
     align-items:center;
     justify-content:center;
     padding:24px;
-  }
-
-  /* ============ DEMO-ONLY page furniture — delete when integrating ============ */
-  .demo-note{
-    position:fixed; top:20px; left:50%; transform:translateX(-50%);
-    background:var(--seed); color:var(--flesh-soft);
-    font-size:13px; padding:8px 16px; border-radius:999px;
-    font-family:var(--body); z-index:999;
-  }
-  .demo-trigger{
-    font-family:var(--body); font-weight:700; font-size:0.95rem;
-    padding:14px 26px; border-radius:999px; border:2px solid transparent;
-    background:var(--watermelon); color:var(--white); cursor:pointer;
-    box-shadow:0 8px 20px rgba(232,71,63,0.35);
-  }
-  /* ============ end demo-only furniture ============ */
+  } 
 
   /* ===================== INSTALL PROMPT — copy from here down ===================== */
-  .install-overlay{
-    position:fixed; inset:0;
-    background:rgba(26,26,26,0.55);
-    display:flex; align-items:flex-end; justify-content:center;
-    z-index:1000;
-    opacity:0; pointer-events:none;
-    transition:opacity 0.25s ease;
-  }
-  .install-overlay.open{ opacity:1; pointer-events:auto; }
-
+  /* No dark backdrop — nothing covers the rest of the page. The sheet itself
+     is pinned to the bottom and just slides up into view / back down out of
+     view when opened or closed. */
   .install-sheet{
+    position:fixed;
+    left:50%;
+    bottom:0;
     width:100%; max-width:480px;
-    background:var(--white);
+    background:var(--rind);
     border-radius:var(--radius-lg) var(--radius-lg) 0 0;
     padding:28px 26px calc(24px + env(safe-area-inset-bottom));
-    box-shadow:0 -20px 60px rgba(0,0,0,0.35);
-    transform:translateY(12%);
+    box-shadow:0 -16px 40px rgba(0,0,0,0.22);
+    transform:translate(-50%, 110%);
     transition:transform 0.32s cubic-bezier(.22,1,.36,1);
     font-family:var(--body);
+    z-index:1000;
   }
-  @media (min-width:640px){
-    .install-overlay{ align-items:center; }
-    .install-sheet{ border-radius:var(--radius-lg); transform:translateY(6px) scale(0.98); }
-  }
-  .install-overlay.open .install-sheet{ transform:translateY(0) scale(1); }
+  .install-sheet.open{ transform:translate(-50%, 0); }
 
   .sheet-top{
     display:flex; align-items:flex-start; justify-content:space-between;
@@ -85,23 +63,23 @@
   }
   .sheet-title{
     font-family:var(--display); font-weight:800; letter-spacing:-0.01em;
-    font-size:1.5rem; color:var(--seed); margin:0;
+    font-size:1.5rem; color:var(--white); margin:0;
   }
-  .sheet-title em{ font-style:normal; color:var(--watermelon); }
+  .sheet-title em{ font-style:normal; color:var(--flesh); }
   .close-btn{
-    background:var(--mist); border:none; color:#6a6a64;
+    background:rgba(255,255,255,0.1); border:none; color:var(--flesh-soft);
     width:32px; height:32px; border-radius:50%;
     font-size:16px; line-height:1; cursor:pointer;
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
     transition:background 0.15s ease, color 0.15s ease;
   }
   .close-btn:hover{ background:var(--watermelon); color:var(--white); }
-  .close-btn:focus-visible{ outline:3px solid var(--watermelon); outline-offset:3px; }
+  .close-btn:focus-visible{ outline:3px solid var(--flesh); outline-offset:3px; }
 
   .brand-row{
     display:flex; align-items:center; gap:14px;
-    background:var(--mist);
-    border:1px solid #dfe9df;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.14);
     border-radius:var(--radius-md);
     padding:14px; margin-bottom:22px;
   }
@@ -115,22 +93,22 @@
     font-family:var(--display); font-weight:800; font-size:1.35rem; color:var(--white);
   }
   .brand-copy{ min-width:0; }
-  .brand-name{ font-family:var(--display); font-weight:800; font-size:1.05rem; color:var(--seed); }
-  .brand-name em{ font-style:normal; color:var(--watermelon); }
-  .brand-url{ font-size:0.85rem; color:var(--rind); margin-top:2px; font-weight:600; }
+  .brand-name{ font-family:var(--display); font-weight:800; font-size:1.05rem; color:var(--white); }
+  .brand-name em{ font-style:normal; color:var(--flesh); }
+  .brand-url{ font-size:0.85rem; color:var(--flesh-soft); margin-top:2px; font-weight:600; opacity:0.85; }
 
   .steps{ list-style:none; margin:0 0 22px; padding:0; display:flex; flex-direction:column; gap:14px; }
-  .steps li{ display:flex; align-items:center; gap:12px; color:#4a4a44; font-size:0.95rem; line-height:1.4; }
+  .steps li{ display:flex; align-items:center; gap:12px; color:rgba(255,255,255,0.85); font-size:0.95rem; line-height:1.4; }
   .step-num{
     width:24px; height:24px; flex-shrink:0; border-radius:50%;
-    background:var(--flesh-soft); color:var(--watermelon-deep);
+    background:rgba(255,255,255,0.12); color:var(--flesh);
     font-family:var(--display); font-size:0.72rem; font-weight:800;
     display:flex; align-items:center; justify-content:center;
   }
   .icon-pill{
     display:inline-flex; align-items:center; gap:6px;
-    background:var(--mist); border:1px solid #dfe9df; border-radius:8px;
-    padding:3px 9px; font-size:0.85rem; font-weight:700; color:var(--seed);
+    background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.16); border-radius:8px;
+    padding:3px 9px; font-size:0.85rem; font-weight:700; color:var(--white);
     white-space:nowrap;
   }
 
@@ -143,9 +121,9 @@
   .btn:hover{ transform:translateY(-2px); }
   .btn-primary{ background:var(--watermelon); color:var(--white); box-shadow:0 8px 20px rgba(232,71,63,0.3); }
   .btn-primary:hover{ background:var(--watermelon-deep); }
-  .btn-ghost{ background:transparent; border-color:#dfe9df; color:var(--seed); }
-  .btn-ghost:hover{ background:var(--mist); }
-  .btn:focus-visible{ outline:3px solid var(--watermelon); outline-offset:3px; }
+  .btn-ghost{ background:transparent; border-color:rgba(255,255,255,0.3); color:var(--white); }
+  .btn-ghost:hover{ background:rgba(255,255,255,0.1); }
+  .btn:focus-visible{ outline:3px solid var(--flesh); outline-offset:3px; }
   /* ===================== end install prompt ===================== */
 </style>
 </head>
@@ -155,31 +133,29 @@
 <button class="demo-trigger" onclick="openInstallPrompt()">Preview install prompt</button>
 
 <!-- ===================== INSTALL PROMPT MARKUP — copy this block into your page ===================== -->
-<div class="install-overlay" id="installOverlay">
-  <div class="install-sheet" role="dialog" aria-modal="true" aria-labelledby="installTitle">
-    <div class="sheet-top">
-      <h2 class="sheet-title" id="installTitle">Get the <em>app</em></h2>
-      <button class="close-btn" id="installCloseBtn" aria-label="Close">✕</button>
-    </div>
+<div class="install-sheet" id="installSheet" role="dialog" aria-modal="true" aria-labelledby="installTitle">
+  <div class="sheet-top">
+    <h2 class="sheet-title" id="installTitle">Get the <em>app</em></h2>
+    <button class="close-btn" id="installCloseBtn" aria-label="Close">✕</button>
+  </div>
 
-    <div class="brand-row">
-      <div class="brand-icon"><span>M</span></div>
-      <div class="brand-copy">
-        <p class="brand-name">Melon<em>thies</em></p>
-        <p class="brand-url">melonthies.ng</p>
-      </div>
+  <div class="brand-row">
+    <div class="brand-icon"><span>M</span></div>
+    <div class="brand-copy">
+      <p class="brand-name">Melon<em>thies</em></p>
+      <p class="brand-url">melonthies.ng</p>
     </div>
+  </div>
 
-    <ul class="steps">
-      <li><span class="step-num">1</span> Tap <span class="icon-pill">⬆ Share</span> in your browser bar</li>
-      <li><span class="step-num">2</span> Scroll and select <span class="icon-pill">＋ Add to Home Screen</span></li>
-      <li><span class="step-num">3</span> Confirm — Melonthies opens like an app, cold cup a tap away</li>
-    </ul>
+  <ul class="steps">
+    <li><span class="step-num">1</span> Tap <span class="icon-pill">⬆ Share</span> in your browser bar</li>
+    <li><span class="step-num">2</span> Scroll and select <span class="icon-pill">＋ Add to Home Screen</span></li>
+    <li><span class="step-num">3</span> Confirm — Melonthies opens like an app, cold cup a tap away</li>
+  </ul>
 
-    <div class="cta-row">
-      <button class="btn btn-ghost" id="installLaterBtn">Maybe later</button>
-      <button class="btn btn-primary" id="installGotItBtn">Got it</button>
-    </div>
+  <div class="cta-row">
+    <button class="btn btn-ghost" id="installLaterBtn">Maybe later</button>
+    <button class="btn btn-primary" id="installGotItBtn">Got it</button>
   </div>
 </div>
 <!-- ===================== end install prompt markup ===================== -->
@@ -187,20 +163,20 @@
 <script>
   // ===================== INSTALL PROMPT LOGIC — copy this into your page's script =====================
   (function(){
-    const overlay = document.getElementById('installOverlay');
+    const sheet = document.getElementById('installSheet');
     const closeBtn = document.getElementById('installCloseBtn');
     const laterBtn = document.getElementById('installLaterBtn');
     const gotItBtn = document.getElementById('installGotItBtn');
     const STORAGE_KEY = 'melonthies_install_dismissed';
 
+    // Slides the sheet up from the bottom of the page.
     window.openInstallPrompt = function(){
-      overlay.classList.add('open');
-      document.body.style.overflow = 'hidden';
+      sheet.classList.add('open');
     };
 
+    // Slides the sheet back down out of view.
     window.closeInstallPrompt = function(remember){
-      overlay.classList.remove('open');
-      document.body.style.overflow = '';
+      sheet.classList.remove('open');
       if (remember){
         try { localStorage.setItem(STORAGE_KEY, Date.now().toString()); } catch(e){}
       }
@@ -208,8 +184,7 @@
 
     closeBtn.addEventListener('click', () => closeInstallPrompt(false));
     laterBtn.addEventListener('click', () => closeInstallPrompt(true));
-    gotItBtn.addEventListener('click', () => closeInstallPrompt(true));
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeInstallPrompt(false); });
+    gotItBtn.addEventListener('click', () => closeInstallPrompt(true)); 
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeInstallPrompt(false); });
 
     // Wire this to your "Get the App" button once it exists, e.g.:
@@ -219,4 +194,4 @@
 </script>
 
 </body>
-</html>
+</html> 
