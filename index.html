@@ -88,9 +88,9 @@
   .brand-name em{ font-style:normal; color:var(--flesh); }
   .brand-url{ font-size:0.85rem; color:var(--flesh-soft); margin-top:2px; font-weight:600; opacity:0.85; }
 
-  .steps{ list-style:none; margin:0 0 22px; padding:0; display:flex; flex-direction:column; gap:14px; }
-  .steps li{ display:flex; align-items:center; gap:12px; color:rgba(255,255,255,0.85); font-size:0.95rem; line-height:1.4; }
-  .step-num{
+  .install-steps{ list-style:none; margin:0 0 12px; padding:0; display:flex; flex-direction:column; gap:12px; }
+  .install-steps li{ display:flex; align-items:center; gap:12px; color:#ffffff; font-size:0.95rem; line-height:1.4; }
+  .install-step-num{
     width:24px; height:24px; flex-shrink:0; border-radius:50%;
     background:rgba(255,255,255,0.12); color:var(--flesh);
     font-family:var(--display); font-size:0.72rem; font-weight:800;
@@ -103,12 +103,13 @@
     white-space:nowrap;
   }
 
-  .cta-row{ display:flex; gap:10px; }
+.cta-row{ display:flex; gap:10px; }
   .btn{
-    flex:1; font-family:var(--body); font-weight:700; font-size:0.95rem;
+    font-family:var(--body); font-weight:700; font-size:0.95rem;
     padding:14px 16px; border-radius:999px; border:2px solid transparent;
     cursor:pointer; transition:transform 0.18s ease, background 0.18s ease;
   }
+  .cta-row .btn{ flex:1; } 
   .btn:hover{ transform:translateY(-2px); }
   .btn-primary{ background:var(--watermelon); color:var(--white); box-shadow:0 8px 20px rgba(232,71,63,0.3); }
   .btn-primary:hover{ background:var(--watermelon-deep); }
