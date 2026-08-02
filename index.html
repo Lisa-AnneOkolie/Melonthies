@@ -1329,5 +1329,26 @@
   })();
   // ===================== end install prompt logic =====================
 </script> 
+document.querySelectorAll('.image-slider').forEach(slider => {
+  const slides = slider.querySelectorAll('.slide');
+  if (slides.length <= 1) return;
+  let current = 0;
+  let timer = null;
+  const interval = parseInt(slider.dataset.interval) || 1000;
+
+  slider.addEventListener('mouseenter', () => {
+    timer = setInterval(() => {
+      slides[current].classList.remove('active');
+      current = (current + 1) % slides.length;
+      slides[current].classList.add('active');
+    }, interval);
+  });
+
+  slider.addEventListener('mouseleave', () => {
+    clearInterval(timer);
+    slides.forEach((s, i) => s.classList.toggle('active', i === 0));
+    current = 0;
+  });
+});
 </body>
 </html>
