@@ -1329,6 +1329,7 @@
   })();
   // ===================== end install prompt logic =====================
 </script> 
+<script>           
 document.querySelectorAll('.image-slider').forEach(slider => {
   const slides = slider.querySelectorAll('.slide');
   if (slides.length <= 1) return;
@@ -1349,6 +1350,7 @@ document.querySelectorAll('.image-slider').forEach(slider => {
     slides.forEach((s, i) => s.classList.toggle('active', i === 0));
     current = 0;
   });
-});
+}); 
+</script>
 </body>
 </html>
