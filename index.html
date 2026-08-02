@@ -487,13 +487,31 @@
     display:flex;
     flex-direction:column;
   }
-  .flavor-top{
+ .flavor-top{
     height:190px;
     display:flex;
     align-items:center;
     justify-content:center;
     position:relative;
+    overflow:hidden;
   }
+  .image-slider {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.image-slider .slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.image-slider .slide.active {
+  opacity: 1;
+}
   .flavor-top.one{background:linear-gradient(160deg,#F7716B,var(--watermelon));}
   .flavor-top.two{background:linear-gradient(160deg,#FBCB7C,#F0A63F);}
   .flavor-top svg{width:120px; height:120px;}
@@ -966,9 +984,10 @@
       <div class="menu-grid">
 
         <article class="flavor-card">
-          <div class="flavor-top one">
-           <img src="Product Images/Original Red2.png" alt="Original Red">
-          </div>
+         <div class="flavor-top one image-slider" data-interval="900">
+         <img class="slide active" src="Product Images/Original Red2.png" alt="Original Red">
+         <img class="slide" src="Product Images/Original Red1.png" alt="Original Red">
+         </div>
           <div class="flavor-body">
             <p class="flavor-tag">Hydrate & Refresh</p>
             <h3>Original Red</h3>
@@ -982,8 +1001,9 @@
         </article>
 
         <article class="flavor-card">
-          <div class="flavor-top two">
-            <img src="Product Images/Golden Glow3.png" alt="Golden Glow">
+          <div class="flavor-top one image-slider" data-interval="900">
+          <img class="slide active" src="Product Images/Golden Glow3.png" alt="Golden Glow">
+          <img class="slide" src="Product Images/Golden Glow1.png" alt="Golden Glow">
           </div>
           <div class="flavor-body">
             <p class="flavor-tag">Start Your Day Right</p>
@@ -998,8 +1018,9 @@
         </article>
 
         <article class="flavor-card">
-          <div class="flavor-top one">
-             <img src="Product Images/Pink Dusk3.png" alt="Pink Dusk">
+          <div class="flavor-top one image-slider" data-interval="900">
+          <img class="slide active" src="Product Images/Pink Dusk3.png" alt="Pink Dusk">
+          <img class="slide" src="Product Images/Pink Dusk1.png" alt="Pink Dusk">
           </div>
           <div class="flavor-body">
             <p class="flavor-tag">Relax & Unwind</p>
@@ -1014,8 +1035,9 @@
         </article>
 
         <article class="flavor-card">
-          <div class="flavor-top two">
-           <img src="Product Images/Rush Hour3.png" alt="Rush Hour">
+          <div class="flavor-top one image-slider" data-interval="900">
+          <img class="slide active" src="Product Images/Rush Hour3.png" alt="Rush Hour">
+          <img class="slide" src="Product Images/Rush Hour2.png" alt="Rush Hour">
           </div>
           <div class="flavor-body">
             <p class="flavor-tag">Work, Study & Meal Replacement</p>
@@ -1030,8 +1052,9 @@
         </article>
 
         <article class="flavor-card">
-          <div class="flavor-top one">
-             <img src="Product Images/tropic blaze2.png" alt="Tropic Blaze">
+          <div class="flavor-top one image-slider" data-interval="900">
+          <img class="slide active" src="Product Images/tropic blaze2.png" alt="Tropic Blaze">
+          <img class="slide" src="Product Images/Tropic Blaze1.png" alt="Tropic Blaze">
           </div>
           <div class="flavor-body">
             <p class="flavor-tag">Gym & Recovery</p>
@@ -1046,8 +1069,9 @@
         </article>
 
         <article class="flavor-card">
-          <div class="flavor-top two">
-           <img src="Product Images/Midnight Bliss3.png" alt="Midnight Bliss3.png">
+          <div class="flavor-top one image-slider" data-interval="900">
+          <img class="slide active" src="Product Images/Midnight Bliss3.png" alt="Midnight Bliss">
+          <img class="slide" src="Product Images/Midnight Bliss1.png" alt="Midnight Bliss">
           </div>
           <div class="flavor-body">
             <p class="flavor-tag">18+</p>
