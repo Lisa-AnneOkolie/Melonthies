@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Melonthies — Reviews Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --rind:#2D6A2F; --watermelon:#E8473F; --watermelon-deep:#C3372F;
+    --seed:#1A1A1A; --mist:#F0F7F0; --white:#FFFFFF;
+    --display:'Syne', sans-serif; --body:'Instrument Sans', sans-serif;
+    --radius-lg:28px; --radius-md:18px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:var(--body); background:var(--mist); color:var(--seed); line-height:1.5; padding:32px 20px 80px; -webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:var(--display); font-weight:800; letter-spacing:-0.01em;}
+  .wrap{max-width:820px; margin:0 auto;}
+  button{font-family:var(--body); cursor:pointer;}
+  .btn{display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:0.95rem; padding:13px 24px; border-radius:999px; border:2px solid transparent;}
+  .btn-primary{background:var(--watermelon); color:var(--white);}
+  .btn-primary:hover{background:var(--watermelon-deep);}
+  .admin-grid{display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:20px;}
+  @media (max-width:760px){.admin-grid{grid-template-columns:1fr;}}
+  .panel{background:var(--white); border-radius:var(--radius-md); padding:24px; box-shadow:0 8px 20px rgba(29,74,32,0.06);}
+  .panel h3{margin-bottom:14px; font-size:1.1rem;}
+  .row{display:flex; gap:8px; margin-bottom:10px;}
+  .row input{flex:1; font-family:var(--body); font-size:0.95rem; padding:11px 14px; border:1.5px solid #ddd; border-radius:12px; background:var(--mist);}
+  .link-out{background:var(--mist); border-radius:10px; padding:10px 12px; font-size:0.82rem; word-break:break-all; margin-top:10px; display:none;}
+  .link-out.show{display:block;}
+  .pending-card{border:1px solid #eee; border-radius:12px; padding:14px 16px; margin-bottom:12px;}
+  .pending-card .stars{color:var(--watermelon); font-size:0.9rem;}
+  .pending-card p.text{font-size:0.88rem; margin:8px 0; color:#333;}
+  .pending-actions{display:flex; gap:8px; margin-top:10px;}
+  .pending-actions button{flex:1; border:none; border-radius:8px; padding:8px; font-size:0.82rem; font-weight:700;}
+  .approve-btn{background:var(--rind); color:var(--white);}
+  .reject-btn{background:#f2e5e5; color:#a33;}
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; margin-top:16px; padding-top:14px; border-top:1px dashed #ddd;}
+  .switch{position:relative; width:42px; height:24px;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider-track{position:absolute; inset:0; background:#ccc; border-radius:999px; transition:.2s;}
+  .slider-track:before{content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s;}
+  input:checked + .slider-track{background:var(--rind);}
+  input:checked + .slider-track:before{transform:translateX(18px);}
+  .empty{color:#888; font-size:0.9rem;}
+  .gate{max-width:340px; margin:80px auto; text-align:center;}
+  .gate input{width:100%; padding:12px 14px; border-radius:12px; border:1.5px solid #ddd; margin:14px 0; font-size:0.95rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="gateView" class="gate">
+    <h2>Admin access</h2>
+    <p style="color:#666; margin-top:8px; font-size:0.9rem;">Enter your admin passphrase to continue.</p>
+    <input type="text" id="adminKeyInput" placeholder="Passphrase">
+    <button class="btn btn-primary" id="gateBtn" style="width:100%; justify-content:center;">Enter</button>
+    <p id="gateError" style="color:#a33; font-size:0.82rem; margin-top:10px;"></p>
+  </div>
+
+  <div id="adminView" style="display:none;">
+    <h1>Reviews admin</h1>
+    <div class="admin-grid">
+      <div class="panel">
+        <h3>Generate a review link</h3>
+        <div class="row"><input type="text" id="custName" placeholder="Customer name"></div>
+        <div class="row"><input type="text" id="orderRef" placeholder="Order reference (optional)"></div>
+        <button class="btn btn-primary" id="genLinkBtn">Generate link</button>
+        <div class="link-out" id="linkOut"></div>
+
+        <div class="toggle-row">
+          <span style="font-size:0.85rem; font-weight:600;">Require approval before reviews go live</span>
+          <label class="switch">
+            <input type="checkbox" id="moderationToggle">
+            <span class="slider-track"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Pending reviews <span id="pendingCount"></span></h3>
+        <div id="pendingList">Loading…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ⚠️ Paste your deployed Apps Script Web App URL here (ends in /exec)
+const APPS_SCRIPT_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+// This is your site's base URL, used to build the customer link.
+const SITE_BASE_URL = "https://melonthies.online";
+
+function esc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function starString(n){ return '★★★★★☆☆☆☆☆'.slice(5-n,10-n); }
+
+function getAdminKey(){ return sessionStorage.getItem('melonthies_admin_key') || ''; }
+
+document.getElementById('gateBtn').addEventListener('click', async ()=>{
+  const key = document.getElementById('adminKeyInput').value.trim();
+  const errEl = document.getElementById('gateError');
+  errEl.textContent = '';
+  if(!key){ errEl.textContent = 'Enter your passphrase.'; return; }
+
+  // Verify by attempting an admin-only call
+  try{
+    const r = await fetch(`${APPS_SCRIPT_URL}?action=getPending&adminKey=${encodeURIComponent(key)}`);
+    const data = await r.json();
+    if(data.error){ errEl.textContent = 'Incorrect passphrase.'; return; }
+    sessionStorage.setItem('melonthies_admin_key', key);
+    document.getElementById('gateView').style.display = 'none';
+    document.getElementById('adminView').style.display = 'block';
+    loadAdmin();
+  }catch(e){
+    errEl.textContent = 'Could not reach the server. Check your connection.';
+  }
+});
+
+async function loadAdmin(){
+  const adminKey = getAdminKey();
+
+  try{
+    const cfgR = await fetch(`${APPS_SCRIPT_URL}?action=getConfig`);
+    const cfg = await cfgR.json();
+    document.getElementById('moderationToggle').checked = cfg.moderationEnabled;
+  }catch(e){}
+
+  const list = document.getElementById('pendingList');
+  list.innerHTML = 'Loading…';
+  let pending = [];
+  try{
+    const r = await fetch(`${APPS_SCRIPT_URL}?action=getPending&adminKey=${encodeURIComponent(adminKey)}`);
+    pending = await r.json();
+    if(pending.error) throw new Error(pending.error);
+  }catch(e){
+    list.innerHTML = '<p class="empty">Could not load pending reviews.</p>';
+    return;
+  }
+
+  document.getElementById('pendingCount').textContent = pending.length ? `(${pending.length})` : '';
+
+  if(pending.length === 0){
+    list.innerHTML = '<p class="empty">Nothing waiting on moderation.</p>';
+    return;
+  }
+  list.innerHTML = '';
+  pending.forEach(rev=>{
+    const el = document.createElement('div');
+    el.className = 'pending-card';
+    el.innerHTML = `
+      <div class="stars">${starString(rev.rating)}</div>
+      <p class="text">"${esc(rev.text)}"</p>
+      <div style="font-size:0.78rem; color:#888;">${esc(rev.customerName)}${rev.flavor ? ' · '+esc(rev.flavor) : ''}</div>
+      <div class="pending-actions">
+        <button class="approve-btn" data-id="${rev.id}" data-action="approveReview">Approve</button>
+        <button class="reject-btn" data-id="${rev.id}" data-action="rejectReview">Reject</button>
+      </div>`;
+    list.appendChild(el);
+  });
+
+  list.querySelectorAll('button[data-action]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      btn.disabled = true;
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: btn.dataset.action, id: btn.dataset.id, adminKey: getAdminKey() })
+      });
+      loadAdmin();
+    });
+  });
+}
+
+document.getElementById('moderationToggle').addEventListener('change', async (e)=>{
+  await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action:'setModeration', enabled: e.target.checked, adminKey: getAdminKey() })
+  });
+});
+
+document.getElementById('genLinkBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('custName').value.trim();
+  const orderId = document.getElementById('orderRef').value.trim();
+  if(!name){ alert('Enter a customer name.'); return; }
+
+  const btn = document.getElementById('genLinkBtn');
+  btn.disabled = true;
+  try{
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action:'generateToken', customerName: name, orderId, adminKey: getAdminKey() })
+    });
+    const data = await r.json();
+    if(data.error) throw new Error(data.error);
+
+    const link = `${SITE_BASE_URL}/review.html?token=${data.token}`;
+    const out = document.getElementById('linkOut');
+    out.className = 'link-out show';
+    out.innerHTML = `Share this with ${esc(name)} on WhatsApp:<br><b>${link}</b>`;
+  }catch(e){
+    alert('Could not generate link.');
+  }
+  btn.disabled = false;
+});
+
+// If we already have a saved key this session, skip the gate
+if(getAdminKey()){
+  document.getElementById('gateView').style.display = 'none';
+  document.getElementById('adminView').style.display = 'block';
+  loadAdmin();
+}
+</script>
+</body>
+</html>
