@@ -133,7 +133,7 @@ async function loadSubmitView(){
 
       card.innerHTML = `<div class="success-msg"><div class="icon">🍉</div>
         <h2>Thanks, ${esc(tokenData.customerName)}!</h2>
-        <p style="color:#666; margin-top:6px;">${result.status==='pending' ? 'Your review is in for a quick check and will appear on the site soon.' : 'Your review is live on the site now.'}</p></div>`;
+        <p style="color:#666; margin-top:6px;">${result.status==='pending' ? 'Your review is in and will appear on the site soon.' : 'Your review is live on the site now.'}</p></div>`;
     }catch(e){
       alert('Something went wrong submitting your review. Please try again.');
       btn.disabled = false;
