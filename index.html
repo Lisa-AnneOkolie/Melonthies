@@ -917,7 +917,7 @@
   <a href="#menu">Menu</a>
   <a href="#how-it-works">How to order</a>
   <a href="gallery.html" target="_blank" rel="noopener">Gallery</a>
-  <a href="reviews.html" target="_blank" rel="noopener">Reviews</a>
+  <a href="#reviews" >Reviews</a>
   <a href="#faq">FAQ</a>
 </nav>
   </div>
@@ -1126,21 +1126,25 @@
     </div>
   </section>
 
-  <!-- REVIEWS TEASER -->
-<section id="reviews-teaser">
+<!-- REVIEWS -->
+<section id="reviews">
   <div class="wrap">
     <div class="section-head">
       <p class="eyebrow">From real customers</p>
       <h2>What people are saying</h2>
       <p>Every review comes from someone who actually ordered a Melonthies smoothie.</p>
     </div>
-    <div class="gallery-cta">
+
+    <div class="rating-summary" id="ratingSummary" style="display:flex; align-items:center; gap:20px; background:var(--white); border-radius:var(--radius-lg); padding:22px 26px; box-shadow:0 12px 30px rgba(29,74,32,0.08); margin-bottom:24px;">
+      <div class="rating-big" id="avgRating" style="font-family:var(--display); font-weight:800; font-size:2.6rem; color:var(--rind);">—</div>
       <div>
-        <h4>See what customers say</h4>
-        <p>Real ratings and reviews from verified orders.</p>
+        <div id="avgStars" style="color:var(--watermelon); font-size:1.1rem; letter-spacing:2px;">☆☆☆☆☆</div>
+        <div id="reviewCount" style="font-size:0.85rem; color:#666; margin-top:4px;">Loading…</div>
       </div>
-      <a class="btn btn-primary" href="reviews.html" target="_blank" rel="noopener">Read reviews</a>
-    </div>
+    </div> 
+
+    <div class="review-grid" id="reviewGrid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px;"></div>
+    <div class="empty" id="reviewEmpty" style="display:none; color:#888; font-size:0.9rem; padding:20px 0;">No approved reviews yet — be the first to try one of our flavors.</div>
   </div>
 </section>
 
@@ -1355,6 +1359,55 @@ document.querySelectorAll(".image-slider").forEach(slider => {
         slides[current].classList.add("active");
     }, 3000);
 });
+</script>
+<script>
+const REVIEWS_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpRrefED1YaCJC_hmajFVgLEpjKVVZG9inyjdFiiHiN8Ib1T9ty3HP4goB1pLXKdUP/exec";
+
+function reviewsEsc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function reviewsStarString(n){ return '★★★★★☆☆☆☆☆'.slice(5-n,10-n); }
+
+async function loadHomeReviews(){
+  let reviews = [];
+  try{
+    const r = await fetch(`${REVIEWS_APPS_SCRIPT_URL}?action=getApprovedReviews`);
+    reviews = await r.json();
+    if(reviews.error) throw new Error(reviews.error);
+  }catch(e){
+    document.getElementById('reviewCount').textContent = "Couldn't load reviews right now.";
+    return;
+  }
+
+  const grid = document.getElementById('reviewGrid');
+  const empty = document.getElementById('reviewEmpty');
+  grid.innerHTML = '';
+
+  if(!reviews.length){
+    empty.style.display = 'block';
+    document.getElementById('reviewCount').textContent = 'No reviews yet';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const avg = reviews.reduce((s,r)=>s+Number(r.rating),0) / reviews.length;
+  document.getElementById('avgRating').textContent = avg.toFixed(1);
+  document.getElementById('avgStars').textContent = reviewsStarString(Math.round(avg));
+  document.getElementById('reviewCount').textContent = `Based on ${reviews.length} review${reviews.length===1?'':'s'}`;
+
+  reviews.forEach(rev=>{
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--white); border-radius:var(--radius-md); padding:20px 22px; box-shadow:0 10px 24px rgba(29,74,32,0.07);';
+    card.innerHTML = `
+      <span style="color:var(--watermelon); font-size:0.95rem; margin-bottom:8px; display:block;">${reviewsStarString(rev.rating)}</span>
+      <p style="font-size:0.92rem; color:#3a3a35; margin-bottom:14px;">"${reviewsEsc(rev.text)}"</p>
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; color:#888;">
+        <span>${reviewsEsc(rev.customerName)} <span style="color:var(--rind); font-weight:600;">✓ verified</span></span>
+        ${rev.flavor ? `<span style="background:var(--mist); color:var(--rind); font-weight:700; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; padding:4px 10px; border-radius:999px;">${reviewsEsc(rev.flavor)}</span>` : ''}
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+loadHomeReviews();
 </script>
 </body>
 </html>
