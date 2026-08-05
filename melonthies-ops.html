@@ -744,8 +744,8 @@ function generateDocHTML(sale, kind){
   const lineTotal = fmtMoney(sale.Total);
   const statusLine = isReceipt
     ? `Paid on ${sale.PaidDate || sale.Date}`
-    : `Bank:`;
-     `Account Number:`;
+    : `Bank:`
+     `Account Number:`
      `Account Name:`;
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${docLabel} ${docNo}</title>
   <style>
