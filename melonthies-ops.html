@@ -743,8 +743,10 @@ function generateDocHTML(sale, kind){
   const docNo = (isReceipt?'RCPT-':'INV-') + sale.ID.split('-').pop().toUpperCase();
   const lineTotal = fmtMoney(sale.Total);
   const statusLine = isReceipt
-    ? `Paid in full on ${sale.PaidDate || sale.Date}`
-    : `Amount due — pay by transfer, then we'll mark this paid`;
+    ? `Paid on ${sale.PaidDate || sale.Date}`
+    : `Bank:`;
+     `Account Number:`;
+     `Account Name:`;
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${docLabel} ${docNo}</title>
   <style>
     body{font-family:Arial,Helvetica,sans-serif;color:#1F2A22;padding:34px;max-width:480px;margin:0 auto;}
