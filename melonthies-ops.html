@@ -246,6 +246,7 @@ const CONFIG = {
 const BUSINESS_INFO = {
   name: 'Melonthies',
   tagline: 'Fresh. Cold. Yours.',
+  logo: 'https://melonthies.online/Melon.png',
   bank: 'OPAY',
   accountnumber: '6480467191',
   accountname:'lisa-anne chuba okolie',
@@ -750,22 +751,29 @@ function generateDocHTML(sale, kind){
     : `Bank: OPAY,  Account number: 6480467191,  Account name: lisa-anne chuba okolie.`;
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${docLabel} ${docNo}</title>
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;color:#1F2A22;padding:34px;max-width:480px;margin:0 auto;}
-    .brand{font-size:22px;font-weight:bold;color:#2D6A2F;margin-bottom:2px;}
-    .brand em{font-style:italic;}
-    .tag{color:#6B7B6D;font-size:12px;margin-bottom:18px;}
+    body{font-family:Arial,Helvetica,sans-serif;color:#1F2A22;padding:0 0 34px;max-width:480px;margin:0 auto;background:#FBF8F2;}
+    .brandhead{background:#2D6A2F;padding:32px 34px 24px;text-align:center;border-radius:0 0 24px 24px;}
+    .brandhead img{width:64px;height:64px;object-fit:contain;margin-bottom:10px;border-radius:14px;background:#fff;padding:6px;}
+    .brand{font-size:26px;font-weight:bold;color:#FFFFFF;margin-bottom:2px;letter-spacing:.01em;}
+    .brand em{font-style:italic;color:#E8473F;}
+    .tag{color:#E7F1E4;font-size:12px;}
+    .body-pad{padding:26px 34px 0;}
     .meta{display:flex;justify-content:space-between;font-size:12.5px;color:#6B7B6D;margin-bottom:18px;border-top:1px solid #E7E2D6;border-bottom:1px solid #E7E2D6;padding:10px 0;}
-    h2{font-size:16px;margin:0 0 4px;}
+    h2{font-size:16px;margin:18px 0 4px;}
     table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px;}
     th{text-align:left;font-size:11px;text-transform:uppercase;color:#6B7B6D;border-bottom:1px solid #E7E2D6;padding:6px 4px;}
     td{padding:8px 4px;border-bottom:1px solid #E7E2D6;}
     .totalrow td{font-weight:bold;font-size:15px;border-bottom:none;padding-top:12px;}
     .status{margin-top:14px;padding:10px 14px;border-radius:10px;background:${isReceipt?'#E7F1E4':'#FCEFD9'};color:${isReceipt?'#2D6A2F':'#9A6B10'};font-size:13px;font-weight:600;text-align:center;}
-    .foot{margin-top:26px;font-size:11.5px;color:#6B7B6D;text-align:center;line-height:1.6;}
-    @media print{ .noprint{display:none;} }
+    .foot{margin-top:26px;font-size:11.5px;color:#6B7B6D;text-align:center;line-height:1.6;padding-bottom:8px;}
+    @media print{ .noprint{display:none;} .brandhead{border-radius:0;} }
   </style></head><body>
-    <div class="brand">${BUSINESS_INFO.name.replace(/thies$/,'<em>thies</em>')}</div>
-    <div class="tag">${BUSINESS_INFO.tagline}</div>
+    <div class="brandhead">
+      <img src="${BUSINESS_INFO.logo}" alt="${BUSINESS_INFO.name} logo" onerror="this.style.display='none'">
+      <div class="brand">Melon<em>thies</em></div>
+      <div class="tag">${BUSINESS_INFO.tagline}</div>
+    </div>
+    <div class="body-pad">
     <h2>${docLabel}</h2>
     <div class="meta"><span>${docNo}</span><span>${sale.Date}</span></div>
     ${sale.Customer ? `<div style="font-size:12.5px;margin-bottom:10px;"><strong>Customer:</strong> ${escapeHtml(sale.Customer)}</div>` : ''}
@@ -783,6 +791,7 @@ function generateDocHTML(sale, kind){
     </div>
     <div class="noprint" style="text-align:center;margin-top:20px;">
       <button onclick="window.print()" style="padding:10px 20px;border-radius:999px;border:none;background:#2D6A2F;color:#fff;font-size:13px;cursor:pointer;">Print / Save as PDF</button>
+    </div>
     </div>
   </body></html>`;
 }
@@ -1053,4 +1062,4 @@ function toast(msg, err){
 }
 </script>
 </body>
-</html>
+</html> 
