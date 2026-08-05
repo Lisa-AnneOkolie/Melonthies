@@ -246,6 +246,9 @@ const CONFIG = {
 const BUSINESS_INFO = {
   name: 'Melonthies',
   tagline: 'Fresh. Cold. Yours.',
+  bank: 'OPAY',
+  accountnumber: '6480467191',
+  accountname:'lisa-anne chuba okolie',
   phone: '0705 279 3371',
   whatsapp: 'https://wa.me/2347052793371',
   address: 'Lagos Island, Nigeria'
@@ -744,7 +747,7 @@ function generateDocHTML(sale, kind){
   const lineTotal = fmtMoney(sale.Total);
   const statusLine = isReceipt
     ? `Paid on ${sale.PaidDate || sale.Date}`
-    : `Bank:` `Account Number:` `Account Name:`;
+    : `Bank:`;
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${docLabel} ${docNo}</title>
   <style>
     body{font-family:Arial,Helvetica,sans-serif;color:#1F2A22;padding:34px;max-width:480px;margin:0 auto;}
