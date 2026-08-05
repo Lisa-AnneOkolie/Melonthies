@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2D6A2F">
+<title>Melonthies — Ops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,500;0,600;0,700;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green-deep:#2D6A2F;
+    --green-mid:#3E8E41;
+    --green-pale:#E7F1E4;
+    --cream:#FBF8F2;
+    --white:#FFFFFF;
+    --ink:#1F2A22;
+    --muted:#6B7B6D;
+    --line:#E7E2D6;
+    --watermelon:#E1483B;
+    --peach:#F6C89F;
+    --pink:#E8779D;
+    --gold:#F2A93B;
+    --shadow:0 8px 24px rgba(45,106,47,0.08);
+    --radius:18px;
+    --radius-sm:12px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.brand{font-family:'Poppins',sans-serif;}
+  em{font-style:italic;color:var(--green-deep);}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  ::selection{background:var(--green-pale);}
+
+  /* ---------- LOGIN ---------- */
+  #loginScreen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 20% 20%, var(--peach) 0%, transparent 45%),
+               radial-gradient(circle at 85% 80%, var(--green-pale) 0%, transparent 50%),
+               var(--cream);
+    padding:24px;
+  }
+  .login-card{
+    background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:40px 36px;width:100%;max-width:380px;text-align:center;
+  }
+  .login-card .brand{font-size:28px;font-weight:700;color:var(--green-deep);margin:0 0 4px;}
+  .login-card .tag{color:var(--muted);font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:28px;}
+  .login-card input{
+    width:100%;padding:13px 16px;border-radius:999px;border:1.5px solid var(--line);
+    font-size:15px;text-align:center;margin-bottom:14px;background:var(--cream);
+    outline:none;transition:border-color .15s;
+  }
+  .login-card input:focus{border-color:var(--green-mid);}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--green-deep);color:#fff;border:none;border-radius:999px;
+    padding:13px 22px;font-weight:600;font-size:14.5px;transition:transform .12s, background .15s;
+  }
+  .btn:hover{background:var(--green-mid);}
+  .btn:active{transform:scale(.97);}
+  .btn.block{width:100%;}
+  .btn.ghost{background:transparent;color:var(--green-deep);border:1.5px solid var(--green-deep);}
+  .btn.ghost:hover{background:var(--green-pale);}
+  .btn.danger{background:var(--watermelon);}
+  .btn.danger:hover{background:#c93b2f;}
+  .btn.sm{padding:8px 14px;font-size:13px;}
+  #loginError{color:var(--watermelon);font-size:13px;min-height:18px;margin:-4px 0 12px;}
+
+  /* ---------- APP SHELL ---------- */
+  #app{display:none;min-height:100vh;}
+  #app.active{display:flex;}
+  .sidebar{
+    width:230px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);
+    padding:22px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;
+  }
+  .sidebar .brand{font-size:20px;font-weight:700;color:var(--green-deep);padding:4px 10px 22px;}
+  .navlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;}
+  .navlist button{
+    width:100%;text-align:left;background:none;border:none;padding:11px 14px;
+    border-radius:12px;font-size:14px;font-weight:500;color:var(--ink);
+    display:flex;align-items:center;gap:10px;transition:background .12s,color .12s;
+  }
+  .navlist button .dot{width:7px;height:7px;border-radius:50%;background:var(--line);flex-shrink:0;}
+  .navlist button:hover{background:var(--green-pale);}
+  .navlist button.active{background:var(--green-deep);color:#fff;}
+  .navlist button.active .dot{background:#fff;}
+  .sidebar .foot{margin-top:24px;padding:12px 10px;border-top:1px solid var(--line);}
+  .sidebar .foot .muted{font-size:12px;color:var(--muted);margin-bottom:8px;}
+
+  .main{flex:1;min-width:0;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:18px 28px;border-bottom:1px solid var(--line);background:var(--white);
+    position:sticky;top:0;z-index:5;
+  }
+  .topbar h1{font-size:20px;margin:0;font-weight:600;}
+  .topbar .sub{color:var(--muted);font-size:13px;margin-top:2px;}
+  .topbar-actions{display:flex;gap:10px;align-items:center;}
+  .status-pill{
+    display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);
+    background:var(--green-pale);padding:6px 12px;border-radius:999px;
+  }
+  .status-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--green-deep);}
+  .content{padding:26px 28px 60px;max-width:1280px;}
+
+  /* ---------- CARDS / TABLE ---------- */
+  .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:22px;}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+  .card-head h2{font-size:17px;margin:0;font-weight:600;}
+  .card-head .actions{display:flex;gap:8px;flex-wrap:wrap;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{
+    text-align:left;font-weight:600;color:var(--muted);font-size:11.5px;text-transform:uppercase;
+    letter-spacing:.04em;padding:10px 12px;border-bottom:1.5px solid var(--line);white-space:nowrap;
+  }
+  tbody td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tbody tr:hover{background:var(--cream);}
+  tbody tr:last-child td{border-bottom:none;}
+  .row-actions{display:flex;gap:6px;white-space:nowrap;}
+  .icon-btn{
+    border:1px solid var(--line);background:var(--white);border-radius:8px;padding:5px 9px;font-size:12px;color:var(--muted);
+  }
+  .icon-btn:hover{border-color:var(--green-deep);color:var(--green-deep);}
+  .empty{color:var(--muted);text-align:center;padding:34px 10px;font-size:13.5px;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;}
+  .badge.ok{background:var(--green-pale);color:var(--green-deep);}
+  .badge.low{background:#FCEFD9;color:#9A6B10;}
+  .badge.out{background:#FBE3E0;color:var(--watermelon);}
+
+  /* ---------- KPI ---------- */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:22px;}
+  .kpi{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;}
+  .kpi .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .kpi .val{font-size:24px;font-weight:700;font-family:'Poppins',sans-serif;}
+  .kpi .val.pos{color:var(--green-deep);}
+  .kpi .val.neg{color:var(--watermelon);}
+  .chart-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;}
+  @media(max-width:900px){.chart-grid{grid-template-columns:1fr;}}
+
+  /* ---------- FORMS / MODAL ---------- */
+  .field-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px;}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  input,select,textarea{
+    width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--line);
+    font-size:13.5px;font-family:inherit;background:var(--cream);outline:none;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--green-mid);}
+  textarea{resize:vertical;min-height:60px;}
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(31,42,34,.45);z-index:50;
+    align-items:flex-start;justify-content:center;padding:5vh 16px;overflow-y:auto;
+  }
+  .modal-overlay.active{display:flex;}
+  .modal{background:var(--white);border-radius:var(--radius);max-width:560px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+  .modal h3{margin:0 0 16px;font-size:18px;}
+  .modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+  .ing-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center;}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px;}
+  .filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;}
+  .filter-row .fld{min-width:150px;}
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;font-size:13.5px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:100;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+  .toast.err{background:var(--watermelon);}
+
+  canvas{max-width:100%;}
+  .flag-list{font-size:13px;color:var(--muted);line-height:1.7;}
+
+  @media(max-width:820px){
+    .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .2s;z-index:40;}
+    .sidebar.open{transform:translateX(0);}
+    .content{padding:18px;}
+    .topbar{padding:14px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="brand">Melon<em>thies</em></div>
+    <div class="tag">Operations</div>
+    <input type="password" id="passcodeInput" placeholder="Enter passcode" autocomplete="off">
+    <div id="loginError"></div>
+    <button class="btn block" id="loginBtn">Unlock</button>
+    <div class="hint" style="margin-top:16px;">Access is gated by a shared passcode set in the Apps Script backend. Not per-user accounts — see the notes at the bottom of Reports.</div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">Melon<em>thies</em></div>
+    <ul class="navlist" id="navlist"></ul>
+    <div class="foot">
+      <div class="muted">Signed in with shared passcode</div>
+      <button class="btn ghost sm block" id="logoutBtn">Log out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="viewTitle">Dashboard</h1>
+        <div class="sub" id="viewSub">Overview of the whole operation</div>
+      </div>
+      <div class="topbar-actions">
+        <span class="status-pill"><span class="dot"></span><span id="syncStatus">Synced</span></span>
+        <button class="btn ghost sm" id="refreshBtn">Refresh</button>
+      </div>
+    </div>
+    <div class="content" id="content"><!-- view renders here --></div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   MELONTHIES OPS — FRONTEND
+   Single-file SPA. Talks to a Google Apps Script Web App backend.
+   ============================================================ */
+
+const CONFIG = {
+  // Paste your Apps Script Web App /exec URL here after deploying Code.gs
+  API_URL: 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE'
+};
+
+const COLORS = ['#2D6A2F','#E1483B','#F2A93B','#E8779D','#3E8E41','#9A6B10','#6B7B6D'];
+
+let STATE = {
+  token: localStorage.getItem('mt_ops_token') || '',
+  db: null,
+  view: 'dashboard',
+  dashDays: 30
+};
+
+// ---------- API ----------
+async function apiGet(action, params={}){
+  const qs = new URLSearchParams({action, token: STATE.token, ...params});
+  const res = await fetch(CONFIG.API_URL + '?' + qs.toString());
+  return res.json();
+}
+async function apiPost(action, sheet, payload={}){
+  const res = await fetch(CONFIG.API_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'text/plain;charset=utf-8'}, // avoids CORS preflight against Apps Script
+    body: JSON.stringify({action, sheet, token: STATE.token, payload})
+  });
+  return res.json();
+}
+
+// ---------- LOGIN ----------
+document.getElementById('loginBtn').addEventListener('click', tryLogin);
+document.getElementById('passcodeInput').addEventListener('keydown', e => { if(e.key==='Enter') tryLogin(); });
+
+async function tryLogin(){
+  const pass = document.getElementById('passcodeInput').value.trim();
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if(!pass){ errEl.textContent = 'Enter the passcode.'; return; }
+  if(CONFIG.API_URL.includes('PASTE_YOUR')){
+    errEl.textContent = 'Backend URL not configured yet — see SETUP.md.';
+    return;
+  }
+  STATE.token = pass;
+  try{
+    const r = await apiPost('auth', '', {});
+    if(!r.ok){ errEl.textContent = 'Wrong passcode.'; STATE.token=''; return; }
+    localStorage.setItem('mt_ops_token', pass);
+    await boot();
+  }catch(err){
+    errEl.textContent = 'Could not reach backend. Check the API URL / your connection.';
+  }
+}
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  localStorage.removeItem('mt_ops_token');
+  STATE.token = '';
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('loginScreen').style.display = 'flex';
+});
+
+async function boot(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  await loadData();
+  buildNav();
+  renderView('dashboard');
+}
+
+async function loadData(){
+  setSync('Syncing…', true);
+  try{
+    const r = await apiGet('getAll');
+    if(!r.ok) throw new Error(r.error || 'load failed');
+    STATE.db = r.data;
+    setSync('Synced', false);
+  }catch(err){
+    setSync('Offline / error', false, true);
+    toast('Could not sync with backend: ' + err.message, true);
+  }
+}
+function setSync(text, spin, err){
+  document.getElementById('syncStatus').textContent = text;
+}
+document.getElementById('refreshBtn').addEventListener('click', async ()=>{ await loadData(); renderView(STATE.view); });
+
+// auto-login if a token is already stored
+(async function autoBoot(){
+  if(STATE.token && !CONFIG.API_URL.includes('PASTE_YOUR')){
+    try{
+      const r = await apiPost('auth','',{});
+      if(r.ok){ await boot(); return; }
+    }catch(e){}
+  }
+})();
+
+// ---------- NAV / MODULE DEFINITIONS ----------
+const MODULES = [
+  { key:'dashboard', label:'Dashboard', sub:'Overview of the whole operation' },
+  { key:'suppliers', label:'Suppliers', sheet:'Suppliers', sub:'Who you buy ingredients and materials from',
+    columns:[['Name','Name'],['ContactPerson','Contact'],['Phone','Phone'],['ItemsSupplied','Supplies'],['Notes','Notes']],
+    fields:[
+      {key:'Name',label:'Supplier name',required:true},
+      {key:'ContactPerson',label:'Contact person'},
+      {key:'Phone',label:'Phone'},
+      {key:'Email',label:'Email'},
+      {key:'ItemsSupplied',label:'Items supplied'},
+      {key:'Notes',label:'Notes',type:'textarea'}
+    ]},
+  { key:'purchases', label:'Purchases', sheet:'Purchases', sub:'Raw ingredients and materials bought in',
+    columns:[['Date','Date'],['SupplierName','Supplier'],['ItemName','Item'],['Quantity','Qty'],['Unit','Unit'],['UnitCost','Unit cost'],['TotalCost','Total'],['Notes','Notes']],
+    custom:'purchase' },
+  { key:'inventory', label:'Inventory', sheet:'Inventory', sub:'Live stock levels for raw ingredients and finished cups',
+    columns:[['ItemName','Item'],['Type','Type'],['QuantityOnHand','On hand'],['Unit','Unit'],['AvgUnitCost','Avg cost'],['ReorderLevel','Reorder at'],['status','Status']],
+    custom:'inventory' },
+  { key:'recipes', label:'Recipes', sheet:'Recipes', sub:'Ingredient formulas behind every product',
+    columns:[['ProductName','Product'],['Size','Size'],['YieldQty','Yield'],['YieldUnit','Unit'],['ingCount','Ingredients'],['Notes','Notes']],
+    custom:'recipe' },
+  { key:'production', label:'Production', sheet:'Production', sub:'Batches made, and what they cost to produce',
+    columns:[['Date','Date'],['ProductName','Product'],['Size','Size'],['BatchQty','Batch qty'],['TotalCost','Total cost'],['CostPerUnit','Cost / unit'],['Notes','Notes']],
+    custom:'production' },
+  { key:'pricing', label:'Pricing', sheet:'Pricing', sub:'Cost, markup, and selling price per product',
+    columns:[['ProductName','Product'],['Size','Size'],['CostPerUnit','Cost'],['MarkupPercent','Markup %'],['SellingPrice','Sells at'],['Notes','Notes']],
+    fields:[
+      {key:'ProductName',label:'Product name',required:true},
+      {key:'Size',label:'Size'},
+      {key:'CostPerUnit',label:'Cost per unit (₦)',type:'number',required:true},
+      {key:'MarkupPercent',label:'Markup %',type:'number'},
+      {key:'SellingPrice',label:'Selling price (₦, optional — auto if blank)',type:'number'},
+      {key:'Notes',label:'Notes',type:'textarea'}
+    ]},
+  { key:'expenses', label:'Expenses', sheet:'Expenses', sub:'Everything spent that is n­ot a raw-ingredient purchase',
+    columns:[['Date','Date'],['Category','Category'],['Description','Description'],['Amount','Amount'],['Notes','Notes']],
+    fields:[
+      {key:'Date',label:'Date',type:'date',required:true},
+      {key:'Category',label:'Category',type:'select',options:['Delivery','Packaging','Marketing','Rent','Utilities','Wages','Equipment','Other']},
+      {key:'Description',label:'Description',required:true},
+      {key:'Amount',label:'Amount (₦)',type:'number',required:true},
+      {key:'Notes',label:'Notes',type:'textarea'}
+    ]},
+  { key:'sales', label:'Sales', sheet:'Sales', sub:'Orders sold, by product and channel',
+    columns:[['Date','Date'],['ProductName','Product'],['Size','Size'],['Quantity','Qty'],['UnitPrice','Unit price'],['Total','Total'],['Channel','Channel'],['Notes','Notes']],
+    custom:'sale' },
+  { key:'reports', label:'Reports', sub:'Filter, summarise, and export' }
+];
+const modByKey = k => MODULES.find(m=>m.key===k);
+
+function buildNav(){
+  const nav = document.getElementById('navlist');
+  nav.innerHTML = '';
+  MODULES.forEach(m=>{
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.innerHTML = `<span class="dot"></span>${m.label}`;
+    btn.dataset.key = m.key;
+    btn.addEventListener('click', ()=>renderView(m.key));
+    li.appendChild(btn);
+    nav.appendChild(li);
+  });
+}
+
+function renderView(key){
+  STATE.view = key;
+  document.querySelectorAll('.navlist button').forEach(b=>b.classList.toggle('active', b.dataset.key===key));
+  const m = modByKey(key);
+  document.getElementById('viewTitle').textContent = m.label;
+  document.getElementById('viewSub').textContent = m.sub;
+  const el = document.getElementById('content');
+  el.innerHTML = '';
+  if(key==='dashboard') return renderDashboard(el);
+  if(key==='reports') return renderReports(el);
+  renderModule(el, m);
+}
+
+// ---------- GENERIC MODULE (TABLE + ADD) ----------
+function renderModule(el, m){
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="card-head">
+      <h2>${m.label}</h2>
+      <div class="actions">
+        <button class="btn ghost sm" data-act="csv">Export CSV</button>
+        <button class="btn sm" data-act="add">+ Add ${m.label.replace(/s$/,'')}</button>
+      </div>
+    </div>
+    <div class="tablewrap"></div>
+  `;
+  card.querySelector('[data-act=csv]').addEventListener('click', ()=>exportCSV(m.sheet, STATE.db[m.sheet]||[]));
+  card.querySelector('[data-act=add]').addEventListener('click', ()=>openForm(m, null));
+  el.appendChild(card);
+  renderTable(card.querySelector('.tablewrap'), m);
+}
+
+function renderTable(wrap, m){
+  const rows = (STATE.db && STATE.db[m.sheet]) || [];
+  if(!rows.length){ wrap.innerHTML = `<div class="empty">No ${m.label.toLowerCase()} logged yet. Use “+ Add” to create the first one.</div>`; return; }
+  const cols = m.columns;
+  let html = '<table><thead><tr>';
+  cols.forEach(c=> html += `<th>${c[1]}</th>`);
+  html += '<th></th></tr></thead><tbody>';
+  rows.slice().reverse().forEach(r=>{
+    html += '<tr>';
+    cols.forEach(c=>{
+      let v = c[0]==='status' ? invStatus(r) : (c[0]==='ingCount' ? (JSON.parse(r.IngredientsJSON||'[]').length + ' items') : r[c[0]]);
+      if(['UnitCost','TotalCost','CostPerUnit','Amount','UnitPrice','Total','SellingPrice','AvgUnitCost'].includes(c[0]) && v!=='' && v!=null) v = fmtMoney(v);
+      if(c[0]==='status') { html += `<td>${v}</td>`; return; }
+      html += `<td>${v!=null?v:''}</td>`;
+    });
+    html += `<td><div class="row-actions">
+        <button class="icon-btn" data-edit="${r.ID}">Edit</button>
+        <button class="icon-btn" data-del="${r.ID}">Delete</button>
+      </div></td></tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>{
+    const rec = rows.find(r=>r.ID===b.dataset.edit);
+    openForm(m, rec);
+  }));
+  wrap.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+    if(!confirm('Delete this record? This does not reverse any inventory change it caused.')) return;
+    const r = await apiPost('delete', m.sheet, {ID:b.dataset.del});
+    if(r.ok){ STATE.db = r.data; toast('Deleted.'); renderView(STATE.view); } else toast(r.error||'Delete failed', true);
+  }));
+}
+
+function invStatus(r){
+  const qty = Number(r.QuantityOnHand), reorder = Number(r.ReorderLevel)||0;
+  if(qty<=0) return '<span class="badge out">Out</span>';
+  if(reorder>0 && qty<=reorder) return '<span class="badge low">Low</span>';
+  return '<span class="badge ok">OK</span>';
+}
+function fmtMoney(v){ const n=Number(v)||0; return '₦' + n.toLocaleString(undefined,{maximumFractionDigits:2}); }
+
+// ---------- FORM MODAL ----------
+function openForm(m, existing){
+  const overlay = document.getElementById('modalOverlay');
+  const body = document.getElementById('modalBody');
+  const custom = m.custom;
+  body.innerHTML = `<h3>${existing?'Edit':'Add'} ${m.label.replace(/s$/,'')}</h3><div id="formInner"></div>
+    <div class="modal-foot">
+      <button class="btn ghost sm" id="cancelForm">Cancel</button>
+      <button class="btn sm" id="saveForm">Save</button>
+    </div>`;
+  overlay.classList.add('active');
+  document.getElementById('cancelForm').addEventListener('click', closeModal);
+
+  const inner = document.getElementById('formInner');
+
+  if(custom==='purchase') return renderPurchaseForm(inner, existing);
+  if(custom==='inventory') return renderInventoryForm(inner, existing);
+  if(custom==='recipe') return renderRecipeForm(inner, existing);
+  if(custom==='production') return renderProductionForm(inner, existing);
+  if(custom==='sale') return renderSaleForm(inner, existing);
+
+  // generic field-driven form
+  let html = '<div class="field-row">';
+  m.fields.forEach(f=>{
+    html += `<div class="fld"><label>${f.label}${f.required?' *':''}</label>${fieldInput(f, existing)}</div>`;
+  });
+  html += '</div>';
+  inner.innerHTML = html;
+  document.getElementById('saveForm').addEventListener('click', async ()=>{
+    const payload = {};
+    m.fields.forEach(f=> payload[f.key] = readField(f) );
+    if(existing) payload.ID = existing.ID;
+    const r = await apiPost(existing?'update':'add', m.sheet, payload);
+    if(r.ok){ STATE.db = r.data; closeModal(); toast('Saved.'); renderView(STATE.view); }
+    else toast(r.error||'Save failed', true);
+  });
+}
+
+function fieldInput(f, existing){
+  const val = existing ? (existing[f.key] ?? '') : (f.default ?? '');
+  if(f.type==='textarea') return `<textarea id="f_${f.key}">${val}</textarea>`;
+  if(f.type==='select') return `<select id="f_${f.key}">${f.options.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('')}</select>`;
+  const type = f.type||'text';
+  return `<input id="f_${f.key}" type="${type}" value="${val!==undefined?val:''}">`;
+}
+function readField(f){
+  const el = document.getElementById('f_'+f.key);
+  return el.value;
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('active'); }
+document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target.id==='modalOverlay') closeModal(); });
+
+// ---- Purchases form (linked to Suppliers + auto Inventory) ----
+function renderPurchaseForm(inner, existing){
+  const suppliers = STATE.db.Suppliers||[];
+  inner.innerHTML = `
+    <div class="field-row">
+      <div class="fld"><label>Date *</label><input id="f_Date" type="date" value="${existing?existing.Date:todayStr()}"></div>
+      <div class="fld"><label>Supplier</label>
+        <select id="f_Supplier"><option value="">— none / one-off —</option>${suppliers.map(s=>`<option value="${s.ID}" data-name="${s.Name}" ${existing&&existing.SupplierID===s.ID?'selected':''}>${s.Name}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="fld"><label>Item name *</label><input id="f_ItemName" value="${existing?existing.ItemName:''}" placeholder="e.g. Watermelon (kg)"></div>
+      <div class="fld"><label>Category</label>
+        <select id="f_Category">
+          <option ${!existing?'':(existing.Category==='Raw Ingredient'?'selected':'')}>Raw Ingredient</option>
+          <option ${existing&&existing.Category==='Packaging'?'selected':''}>Packaging</option>
+          <option ${existing&&existing.Category==='Other'?'selected':''}>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="fld"><label>Quantity *</label><input id="f_Quantity" type="number" step="any" value="${existing?existing.Quantity:''}"></div>
+      <div class="fld"><label>Unit *</label><input id="f_Unit" value="${existing?existing.Unit:''}" placeholder="kg, L, pcs..."></div>
+      <div class="fld"><label>Unit cost (₦) *</label><input id="f_UnitCost" type="number" step="any" value="${existing?existing.UnitCost:''}"></div>
+    </div>
+    <div class="fld"><label>Notes</label><textarea id="f_Notes">${existing?existing.Notes:''}</textarea></div>
+    <div class="hint">Adding a purchase automatically increases Inventory for this item and recalculates its average cost.</div>
+  `;
+  document.getElementById('saveForm').addEventListener('click', async ()=>{
+    const supSel = document.getElementById('f_Supplier');
+    const opt = supSel.options[supSel.selectedIndex];
+    const payload = {
+      Date: val('f_Date'), SupplierID: supSel.value, SupplierName: supSel.value? opt.dataset.name : 'One-off',
+      ItemName: val('f_ItemName'), Category: val('f_Category'), Quantity: val('f_Quantity'),
+      Unit: val('f_Unit'), UnitCost: val('f_UnitCost'), Notes: val('f_Notes')
+    };
+    if(existing) payload.ID = existing.ID;
+    const r = await apiPost(existing?'update':'add', 'Purchases', payload);
+    if(r.ok){ STATE.db=r.data; closeModal(); toast('Purchase logged.'); renderView(STATE.view); } else toast(r.error||'Failed', true);
+  });
+}
+
+// ---- Inventory: manual stock adjustment ----
+function renderInventoryForm(inner, existing){
+  inner.innerHTML = `
+    <div class="field-row">
+      <div class="fld"><label>Item name *</label><input id="f_ItemName" value="${existing?existing.ItemName:''}"></div>
+      <div class="fld"><label>Type</label>
+        <select id="f_Type"><option ${!existing||existing.Type==='Raw'?'selected':''}>Raw</option><option ${existing&&existing.Type==='Finished'?'selected':''}>Finished</option></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="fld"><label>Unit</label><input id="f_Unit" value="${existing?existing.Unit:''}"></div>
+      <div class="fld"><label>Adjust quantity by (+/-) *</label><input id="f_QuantityDelta" type="number" step="any" value="0"></div>
+      <div class="fld"><label>Reorder level</label><input id="f_ReorderLevel" type="number" step="any" value="${existing?existing.ReorderLevel:0}"></div>
+    </div>
+    <div class="hint">This is a correction / stock-count entry — it adds (or subtracts, with a negative number) from the current quantity on hand. Use Purchases and Production for normal stock-in, and Sales for normal stock-out.</div>
+  `;
+  document.getElementById('saveForm').addEventListener('click', async ()=>{
+    const payload = { ItemName: val('f_ItemName'), Type: val('f_Type'), Unit: val('f_Unit'),
+      QuantityDelta: val('f_QuantityDelta'), ReorderLevel: val('f_ReorderLevel') };
+    const r = await apiPost('add', 'Inventory', payload);
+    if(r.ok){ STATE.db=r.data; closeModal(); toast('Inventory updated.'); renderView(STATE.view); } else toast(r.error||'Failed', true);
+  });
+}
+
+// ---- Recipes: dynamic ingredient list ----
+function renderRecipeForm(inner, existing){
+  const existingIngs = existing ? JSON.parse(existing.IngredientsJSON||'[]') : [{itemName:'',qty:'',unit:''}];
+  inner.innerHTML = `
+    <div class="field-row">
+      <div class="fld"><label>Product name *</label><input id="f_ProductName" value="${existing?existing.ProductName:''}"></div>
+      <div class="fld"><label>Size</label><input id="f_Size" value="${existing?existing.Size:''}" placeholder="Classic 350ml"></div>
+    </div>
+    <div class="field-row">
+      <div class="fld"><label>Yield qty *</label><input id="f_YieldQty" type="number" step="any" value="${existing?existing.YieldQty:1}"></div>
+      <div class="fld"><label>Yield unit</label><input id="f_YieldUnit" value="${existing?existing.YieldUnit:'cup'}"></div>
+    </div>
+    <label>Ingredients (per batch = 1 yield)</label>
+    <div id="ingRows"></div>
+    <button class="btn ghost sm" id="addIngRow" type="button">+ Ingredient</button>
+    <div class="fld" style="margin-top:12px;"><label>Notes</label><textarea id="f_Notes">${existing?existing.Notes:''}</textarea></div>
+  `;
+  const ingWrap = document.getElementById('ingRows');
+  function addRow(ing){
+    const row = document.createElement('div');
+    row.className = 'ing-row';
+    row.innerHTML = `<input placeholder="Item name (matches Inventory)" class="ing-name" value="${ing.itemName||''}">
+      <input placeholder="Qty" type="number" step="any" class="ing-qty" value="${ing.qty||''}">
+      <input placeholder="Unit" class="ing-unit" value="${ing.unit||''}">
+      <button class="icon-btn" type="button">✕</button>`;
+    row.querySelector('button').addEventListener('click', ()=>row.remove());
+    ingWrap.appendChild(row);
+  }
+  existingIngs.forEach(addRow);
+  document.getElementById('addIngRow').addEventListener('click', ()=>addRow({}));
+
+  document.getElementById('saveForm').addEventListener('click', async ()=>{
+    const ings = [...ingWrap.querySelectorAll('.ing-row')].map(r=>({
+      itemName: r.querySelector('.ing-name').value,
+      qty: r.querySelector('.ing-qty').value,
+      unit: r.querySelector('.ing-unit').value
+    })).filter(i=>i.itemName);
+    const payload = { ProductName: val('f_ProductName'), Size: val('f_Size'), YieldQty: val('f_YieldQty'),
+      YieldUnit: val('f_YieldUnit'), Ingredients: ings, Notes: val('f_Notes') };
+    if(existing) payload.ID = existing.ID;
+    const r = await apiPost(existing?'update':'add', 'Recipes', existing? {...payload, IngredientsJSON:JSON.stringify(ings)} : payload);
+    if(r.ok){ STATE.db=r.data; closeModal(); toast('Recipe saved.'); renderView(STATE.view); } else toast(r.error||'Failed', true);
+  });
+}
+
+// ---- Production: pick recipe + batch qty ----
+function renderProductionForm(inner){
+  const recipes = STATE.db.Recipes||[];
+  inner.innerHTML = `
+    <div class="field-row">
+      <div class="fld"><label>Date *</label><input id="f_Date" type="date" value="${todayStr()}"></div>
+      <div class="fld"><label>Recipe *</label>
+        <select id="f_RecipeID">${recipes.map(r=>`<option value="${r.ID}">${r.ProductName} — ${r.Size}</option>`).join('') || '<option value="">No recipes yet</option>'}</select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="fld"><label>Batch quantity (yield units produced) *</label><input id="f_BatchQty" type="number" step="any" value=""></div>
+    </div>
+    <div class="fld"><label>Notes</label><textarea id="f_Notes"></textarea></div>
+    <div class="hint">Deducts raw ingredients from Inventory (scaled to batch size) and adds the finished product to Inventory at the computed cost per unit.</div>
+  `;
+  document.getElementById('saveForm').addEventListener('click', async ()=>{
+    if(!recipes.length){ toast('Create a recipe first.', true); return; }
+    const payload = { Date: val('f_Date'), RecipeID: val('f_RecipeID'), BatchQty: val('f_BatchQty'), Notes: val('f_Notes') };
+    const r = await apiPost('add', 'Production', payload);
+    if(r.ok){ STATE.db=r.data; closeModal(); toast('Production logged.'); renderView(STATE.view); } else toast(r.error||'Failed', true);
+  });
+}
+
+// ---- Sales form ----
+function renderSaleForm(inner, existing){
+  const pricing = STATE.db.Pricing||[];
+  inner.innerHTML = `
+    <div class="field-row">
+      <div class="fld"><label>Date *</label><input id="f_Date" type="date" value="${existing?existing.Date:todayStr()}"></div>
+      <div class="fld"><label>Product *</label>
+        <select id="f_Product">${pricing.map(p=>`<option value="${p.ProductName}|${p.Size}" data-price="${p.SellingPrice}" ${existing&&existing.ProductName===p.ProductName?'selected':''}>${p.ProductName} — ${p.Size}</option>`).join('') || '<option value="">Add a Pricing entry first</option>'}</select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="fld"><label>Quantity *</label><input id="f_Quantity" type="number" step="any" value="${existing?existing.Quantity:1}"></div>
+      <div class="fld"><label>Unit price (₦) *</label><input id="f_UnitPrice" type="number" step="any" value="${existing?existing.UnitPrice:''}"></div>
+      <div class="fld"><label>Channel</label>
+        <select id="f_Channel">${['WhatsApp','Walk-in','Delivery','Instagram'].map(c=>`<option ${existing&&existing.Channel===c?'selected':''}>${c}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="fld"><label>Notes</label><textarea id="f_Notes">${existing?existing.Notes:''}</textarea></div>
+    <div class="hint">Deducts the sold quantity from Inventory's finished-goods stock for this product.</div>
+  `;
+  const sel = document.getElementById('f_Product');
+  sel.addEventListener('change', ()=>{
+    const opt = sel.options[sel.selectedIndex];
+    if(opt && opt.dataset.price) document.getElementById('f_UnitPrice').value = opt.dataset.price;
+  });
+  document.getElementById('saveForm').addEventListener('click', async ()=>{
+    const [prod, size] = (sel.value||'').split('|');
+    const payload = { Date: val('f_Date'), ProductName: prod||'', Size: size||'', Quantity: val('f_Quantity'),
+      UnitPrice: val('f_UnitPrice'), Channel: val('f_Channel'), Notes: val('f_Notes') };
+    if(existing) payload.ID = existing.ID;
+    const r = await apiPost(existing?'update':'add', 'Sales', payload);
+    if(r.ok){ STATE.db=r.data; closeModal(); toast('Sale logged.'); renderView(STATE.view); } else toast(r.error||'Failed', true);
+  });
+}
+
+function val(id){ return document.getElementById(id).value; }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+// ---------- DASHBOARD ----------
+function renderDashboard(el){
+  const days = STATE.dashDays;
+  const since = new Date(); since.setDate(since.getDate()-days);
+  const sales = (STATE.db.Sales||[]).filter(s=>new Date(s.Date)>=since);
+  const expenses = (STATE.db.Expenses||[]).filter(x=>new Date(x.Date)>=since);
+  const inventory = STATE.db.Inventory||[];
+
+  const revenue = sum(sales,'Total');
+  const cogs = sum(sales.map(s=>({v:Number(s.Quantity)*Number(s.UnitCost)})),'v');
+  const expTotal = sum(expenses,'Amount');
+  const profit = revenue - cogs - expTotal;
+  const lowStock = inventory.filter(i=>Number(i.QuantityOnHand)<=(Number(i.ReorderLevel)||0));
+
+  el.innerHTML = `
+    <div class="filter-row">
+      <div class="fld"><label>Window</label>
+        <select id="dashRange">
+          <option value="7" ${days===7?'selected':''}>Last 7 days</option>
+          <option value="30" ${days===30?'selected':''}>Last 30 days</option>
+          <option value="90" ${days===90?'selected':''}>Last 90 days</option>
+          <option value="3650" ${days===3650?'selected':''}>All time</option>
+        </select>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="lbl">Revenue</div><div class="val pos">${fmtMoney(revenue)}</div></div>
+      <div class="kpi"><div class="lbl">Cost of goods</div><div class="val">${fmtMoney(cogs)}</div></div>
+      <div class="kpi"><div class="lbl">Expenses</div><div class="val">${fmtMoney(expTotal)}</div></div>
+      <div class="kpi"><div class="lbl">Net profit</div><div class="val ${profit>=0?'pos':'neg'}">${fmtMoney(profit)}</div></div>
+      <div class="kpi"><div class="lbl">Orders</div><div class="val">${sales.length}</div></div>
+      <div class="kpi"><div class="lbl">Low / out of stock</div><div class="val ${lowStock.length?'neg':'pos'}">${lowStock.length}</div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="card"><h3 style="margin-top:0;font-size:15px;">Revenue by day</h3><canvas id="chRevenue" height="220"></canvas></div>
+      <div class="card"><h3 style="margin-top:0;font-size:15px;">Expenses by category</h3><canvas id="chExpense" height="220"></canvas></div>
+      <div class="card"><h3 style="margin-top:0;font-size:15px;">Top products by revenue</h3><canvas id="chProducts" height="220"></canvas></div>
+      <div class="card"><h3 style="margin-top:0;font-size:15px;">Sales by channel</h3><canvas id="chChannel" height="220"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Low stock alerts</h2></div>
+      ${lowStock.length ? renderLowStockTable(lowStock) : '<div class="empty">Nothing below its reorder level right now.</div>'}
+    </div>
+  `;
+  document.getElementById('dashRange').addEventListener('change', e=>{ STATE.dashDays = Number(e.target.value); renderDashboard(el); });
+
+  // Revenue by day
+  const byDay = groupSum(sales, s=>s.Date, 'Total');
+  drawBarChart(document.getElementById('chRevenue'), Object.keys(byDay), Object.values(byDay), '#2D6A2F');
+
+  // Expenses by category
+  const byCat = groupSum(expenses, x=>x.Category||'Other', 'Amount');
+  drawDonutChart(document.getElementById('chExpense'), Object.keys(byCat), Object.values(byCat));
+
+  // Top products by revenue
+  const byProd = groupSum(sales, s=>s.ProductName+' '+(s.Size||''), 'Total');
+  const topProd = Object.entries(byProd).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  drawBarChart(document.getElementById('chProducts'), topProd.map(p=>p[0]), topProd.map(p=>p[1]), '#E8779D');
+
+  // Sales by channel
+  const byChan = groupSum(sales, s=>s.Channel||'Other', 'Total');
+  drawDonutChart(document.getElementById('chChannel'), Object.keys(byChan), Object.values(byChan));
+}
+
+function renderLowStockTable(rows){
+  let html = '<table><thead><tr><th>Item</th><th>Type</th><th>On hand</th><th>Reorder at</th><th>Status</th></tr></thead><tbody>';
+  rows.forEach(r=> html += `<tr><td>${r.ItemName}</td><td>${r.Type}</td><td>${r.QuantityOnHand} ${r.Unit}</td><td>${r.ReorderLevel}</td><td>${invStatus(r)}</td></tr>`);
+  return html + '</tbody></table>';
+}
+
+function sum(arr, key){ return arr.reduce((a,r)=>a+(Number(r[key])||0),0); }
+function groupSum(arr, keyFn, valKey){
+  const out = {};
+  arr.forEach(r=>{ const k=keyFn(r); out[k]=(out[k]||0)+(Number(r[valKey])||0); });
+  return out;
+}
+
+// ---------- REPORTS ----------
+function renderReports(el){
+  const db = STATE.db;
+  el.innerHTML = `
+    <div class="filter-row">
+      <div class="fld"><label>From</label><input type="date" id="repFrom"></div>
+      <div class="fld"><label>To</label><input type="date" id="repTo" value="${todayStr()}"></div>
+      <button class="btn sm" id="repApply" style="align-self:flex-end;">Apply</button>
+      <button class="btn ghost sm" id="repPrint" style="align-self:flex-end;">Print / Save as PDF</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Summary</h2><div class="actions"><button class="btn ghost sm" id="repCsvAll">Export combined CSV</button></div></div>
+      <div id="repSummary"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Export by module</h2></div>
+      <div class="actions" id="repExports" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+  `;
+  const exp = document.getElementById('repExports');
+  MODULES.filter(m=>m.sheet).forEach(m=>{
+    const b = document.createElement('button');
+    b.className='btn ghost sm'; b.textContent = m.label + ' CSV';
+    b.addEventListener('click', ()=>exportCSV(m.sheet, db[m.sheet]||[]));
+    exp.appendChild(b);
+  });
+  document.getElementById('repApply').addEventListener('click', renderSummary);
+  document.getElementById('repPrint').addEventListener('click', ()=>window.print());
+  document.getElementById('repCsvAll').addEventListener('click', ()=>exportCombined());
+  renderSummary();
+
+  function inRange(dateStr){
+    const from = document.getElementById('repFrom').value;
+    const to = document.getElementById('repTo').value;
+    if(from && dateStr < from) return false;
+    if(to && dateStr > to) return false;
+    return true;
+  }
+  function renderSummary(){
+    const sales = (db.Sales||[]).filter(s=>inRange(s.Date));
+    const expenses = (db.Expenses||[]).filter(x=>inRange(x.Date));
+    const purchases = (db.Purchases||[]).filter(p=>inRange(p.Date));
+    const production = (db.Production||[]).filter(p=>inRange(p.Date));
+    const revenue = sum(sales,'Total');
+    const cogs = sum(sales.map(s=>({v:Number(s.Quantity)*Number(s.UnitCost)})),'v');
+    const expTotal = sum(expenses,'Amount');
+    const purchaseTotal = sum(purchases,'TotalCost');
+    const prodCost = sum(production,'TotalCost');
+    document.getElementById('repSummary').innerHTML = `
+      <table>
+        <tbody>
+          <tr><td>Orders sold</td><td>${sales.length}</td></tr>
+          <tr><td>Revenue</td><td>${fmtMoney(revenue)}</td></tr>
+          <tr><td>Cost of goods sold</td><td>${fmtMoney(cogs)}</td></tr>
+          <tr><td>Gross profit</td><td>${fmtMoney(revenue-cogs)}</td></tr>
+          <tr><td>Operating expenses</td><td>${fmtMoney(expTotal)}</td></tr>
+          <tr><td><strong>Net profit</strong></td><td><strong>${fmtMoney(revenue-cogs-expTotal)}</strong></td></tr>
+          <tr><td>Purchases spend</td><td>${fmtMoney(purchaseTotal)}</td></tr>
+          <tr><td>Production batches run</td><td>${production.length} (${fmtMoney(prodCost)} cost)</td></tr>
+        </tbody>
+      </table>`;
+  }
+  function exportCombined(){
+    const from = document.getElementById('repFrom').value || 'start';
+    const to = document.getElementById('repTo').value || todayStr();
+    let rows = [['Report period', from + ' to ' + to],[]];
+    ['Sales','Expenses','Purchases','Production'].forEach(sheet=>{
+      rows.push([sheet]);
+      const data = (db[sheet]||[]).filter(r=>inRange(r.Date));
+      if(data.length){
+        rows.push(Object.keys(data[0]));
+        data.forEach(r=>rows.push(Object.values(r)));
+      }
+      rows.push([]);
+    });
+    downloadCSV('melonthies-report-'+from+'_to_'+to+'.csv', rows.map(r=>r.join(',')).join('\n'));
+  }
+}
+
+// ---------- CSV EXPORT ----------
+function exportCSV(name, rows){
+  if(!rows.length){ toast('Nothing to export yet.', true); return; }
+  const headers = Object.keys(rows[0]);
+  const lines = [headers.join(',')].concat(rows.map(r=>headers.map(h=>csvCell(r[h])).join(',')));
+  downloadCSV(name.toLowerCase()+'.csv', lines.join('\n'));
+}
+function csvCell(v){
+  if(v==null) return '';
+  const s = String(v).replace(/"/g,'""');
+  return /[,"\n]/.test(s) ? `"${s}"` : s;
+}
+function downloadCSV(filename, content){
+  const blob = new Blob([content], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------- CANVAS CHARTS (no external libraries) ----------
+function drawBarChart(canvas, labels, values, color){
+  const ctx = setupCanvas(canvas);
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const padL=40, padB=54, padT=14, padR=10;
+  const max = Math.max(1, ...values);
+  const bw = (w-padL-padR)/Math.max(1,values.length);
+  ctx.strokeStyle = '#E7E2D6'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y = padT + (h-padT-padB)*(i/4);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); ctx.stroke();
+  }
+  values.forEach((v,i)=>{
+    const bh = (h-padT-padB) * (v/max);
+    const x = padL + i*bw + bw*0.15;
+    const y = h-padB-bh;
+    ctx.fillStyle = color;
+    roundRect(ctx, x, y, bw*0.7, bh, 5);
+    ctx.fillStyle = '#1F2A22'; ctx.font='11px Inter'; ctx.textAlign='center';
+    ctx.save(); ctx.translate(x+bw*0.35, h-padB+14); ctx.rotate(labels.length>6?-0.5:0);
+    ctx.fillText(truncate(String(labels[i]),10), 0, 0); ctx.restore();
+  });
+  if(!values.length){ noData(ctx,w,h); }
+}
+function drawDonutChart(canvas, labels, values){
+  const ctx = setupCanvas(canvas);
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const total = values.reduce((a,b)=>a+b,0);
+  if(!total){ noData(ctx,w,h); return; }
+  const cx = w*0.32, cy = h/2, rOuter = Math.min(w*0.28,h*0.42), rInner = rOuter*0.58;
+  let start = -Math.PI/2;
+  values.forEach((v,i)=>{
+    const angle = (v/total)*Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,rOuter,start,start+angle);
+    ctx.closePath();
+    ctx.fillStyle = COLORS[i%COLORS.length];
+    ctx.fill();
+    start += angle;
+  });
+  ctx.globalCompositeOperation='destination-out';
+  ctx.beginPath(); ctx.arc(cx,cy,rInner,0,Math.PI*2); ctx.fill();
+  ctx.globalCompositeOperation='source-over';
+  // legend
+  let ly = 14;
+  labels.forEach((l,i)=>{
+    ctx.fillStyle = COLORS[i%COLORS.length];
+    ctx.fillRect(w*0.62, ly, 10, 10);
+    ctx.fillStyle = '#1F2A22'; ctx.font='11.5px Inter'; ctx.textAlign='left';
+    ctx.fillText(truncate(String(l),14) + ' (' + Math.round(values[i]/total*100) + '%)', w*0.62+16, ly+9);
+    ly += 20;
+  });
+}
+function setupCanvas(canvas){
+  const dpr = window.devicePixelRatio||1;
+  const cssW = canvas.parentElement.clientWidth - 44;
+  const cssH = canvas.height || 220;
+  canvas.style.width = cssW+'px'; canvas.style.height = cssH+'px';
+  canvas.width = cssW*dpr; canvas.height = cssH*dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  Object.defineProperty(canvas,'clientWidth',{value:cssW,configurable:true});
+  Object.defineProperty(canvas,'clientHeight',{value:cssH,configurable:true});
+  ctx.clearRect(0,0,cssW,cssH);
+  return ctx;
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath(); ctx.fill();
+}
+function truncate(s,n){ return s.length>n ? s.slice(0,n-1)+'…' : s; }
+function noData(ctx,w,h){ ctx.fillStyle='#6B7B6D'; ctx.font='13px Inter'; ctx.textAlign='center'; ctx.fillText('No data in this window yet', w/2, h/2); }
+
+// ---------- TOAST ----------
+let toastTimer;
+function toast(msg, err){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show' + (err?' err':'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>
