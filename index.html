@@ -1614,7 +1614,37 @@ loadHomeReviews();
   document.getElementById('cartOpenBtn').addEventListener('click', () => { renderCart(); openCart(); });
   document.getElementById('cartCloseBtn').addEventListener('click', closeCart);
   overlay.addEventListener('click', closeCart);
+const SALES_API_URL = 'https://script.google.com/macros/s/AKfycbze0r-nvsWsX3ryXEcizB2wifBvCqrxUXux5PihgcxdYmX-FiQUUF2LKbLKTjapPPUblQ/exec';
+const PUBLIC_ORDER_KEY = 'PASTE_THE_SAME_KEY_YOU_SET_IN_CODE.GS';
 
+function logSaleToSheet(cart) {
+  return fetch(SALES_API_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      publicKey: PUBLIC_ORDER_KEY,
+      action: 'addCartOrder',
+      payload: {
+        items: cart.map(item => ({ flavor: item.flavor, size: item.size, qty: item.qty, price: item.price })),
+        channel: 'WhatsApp'
+      }
+    })
+  });
+}
+
+cartCheckoutBtn.addEventListener('click', (e) => {
+  if (!cart.length) return;
+  e.preventDefault();
+  const waHref = cartCheckoutBtn.href;
+  logSaleToSheet(cart).finally(() => {
+    cart = [];
+    saveCart(cart);
+    renderCart();
+    closeCart();
+  });
+  window.open(waHref, '_blank', 'noopener');
+});
   renderCart();
 })();
 </script>
