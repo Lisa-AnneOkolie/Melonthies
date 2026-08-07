@@ -1563,7 +1563,7 @@ loadHomeReviews();
 
   function renderCart(){
     cartItemsEl.innerHTML = '';
-    if (!cart.length){ cartItemsEl.innerHTML = '<p class="cart-empty">Your cart is empty. Add a flavor to get started!</p>'; }
+    if (!cart.length){ cartItemsEl.innerHTML = '<p class="cart-empty">Your cart is empty!</p>'; }
     let total = 0, count = 0;
     cart.forEach((item, idx) => {
       total += item.price * item.qty;
