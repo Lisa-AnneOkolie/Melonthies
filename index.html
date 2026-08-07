@@ -900,6 +900,35 @@
     z-index:999;
   }
   .skip-link:focus{left:16px; top:16px;}
+  /* ---------- CART ---------- */
+.cart-btn{position:relative;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);color:var(--white);font-family:var(--body);font-weight:700;font-size:0.85rem;padding:8px 14px;border-radius:999px;cursor:pointer;transition:background 0.15s ease;}
+.cart-btn:hover{background:rgba(255,255,255,0.18);}
+.cart-btn .cart-badge{background:var(--watermelon);color:var(--white);font-size:0.68rem;font-weight:800;min-width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;}
+.cart-controls{margin-top:20px;display:flex;flex-direction:column;gap:10px;}
+.cart-controls .btn{margin-top:0;}
+.size-select{width:100%;font-family:var(--body);font-size:0.9rem;font-weight:600;color:var(--seed);padding:10px 12px;border-radius:12px;border:1px solid #ddd;background:var(--white);}
+.qty-stepper{display:flex;align-items:center;justify-content:center;gap:16px;background:var(--mist);border-radius:999px;padding:6px 10px;}
+.qty-btn{width:30px;height:30px;border-radius:50%;border:none;background:var(--white);box-shadow:0 2px 6px rgba(0,0,0,0.1);font-family:var(--display);font-size:1.1rem;font-weight:800;color:var(--rind);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.qty-btn:hover{background:var(--flesh-soft);}
+.qty-value{min-width:20px;text-align:center;font-weight:700;font-family:var(--display);}
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);opacity:0;pointer-events:none;transition:opacity 0.25s ease;z-index:998;}
+.cart-overlay.open{opacity:1;pointer-events:auto;}
+.cart-drawer{position:fixed;top:0;right:0;height:100%;width:min(400px,92vw);background:var(--white);box-shadow:-14px 0 40px rgba(0,0,0,0.25);transform:translateX(100%);transition:transform 0.3s cubic-bezier(.22,1,.36,1);z-index:999;display:flex;flex-direction:column;}
+.cart-drawer.open{transform:translateX(0);}
+.cart-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;border-bottom:1px solid #eee;}
+.cart-drawer-head h3{font-family:var(--display);font-size:1.2rem;color:var(--seed);}
+.cart-drawer-close{background:var(--mist);border:none;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--seed);}
+.cart-drawer-items{flex:1;overflow-y:auto;padding:16px 24px;display:flex;flex-direction:column;gap:14px;}
+.cart-item{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;border-bottom:1px solid #f0f0ea;padding-bottom:14px;}
+.cart-item-name{font-weight:700;font-size:0.95rem;color:var(--seed);}
+.cart-item-meta{font-size:0.82rem;color:#777;margin-top:2px;}
+.cart-item-controls{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.cart-item-price{font-family:var(--display);font-weight:800;color:var(--rind);white-space:nowrap;}
+.cart-item-remove{background:none;border:none;color:var(--watermelon);font-size:0.78rem;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;}
+.cart-empty{color:#888;font-size:0.9rem;text-align:center;padding:40px 0;}
+.cart-drawer-footer{padding:20px 24px 26px;border-top:1px solid #eee;}
+.cart-total-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--display);font-weight:800;font-size:1.15rem;color:var(--seed);margin-bottom:14px;}
+.cart-checkout-btn{width:100%;justify-content:center;}
 </style>
 </head>
 <body>
@@ -920,6 +949,7 @@
   <a href="#reviews" >Reviews</a>
   <a href="#faq">FAQ</a>
 </nav>
+<button class="cart-btn" id="cartOpenBtn" aria-label="Open cart">🛒 Cart <span class="cart-badge" id="cartBadge">0</span></button>
   </div>
 </header>
 
@@ -931,7 +961,18 @@
     </svg>
   </span><span class="fob-text">Order Now</span>
 </a>
-
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
+  <div class="cart-drawer-head">
+    <h3>Your Cart</h3>
+    <button class="cart-drawer-close" id="cartCloseBtn" aria-label="Close cart">✕</button>
+  </div>
+  <div class="cart-drawer-items" id="cartItems"></div>
+  <div class="cart-drawer-footer">
+    <div class="cart-total-row"><span>Total</span><span id="cartTotal">₦0</span></div>
+    <a class="btn btn-primary cart-checkout-btn" id="cartCheckoutBtn" href="#" target="_blank" rel="noopener">Checkout on WhatsApp</a>
+  </div>
+</aside>
 <main id="main">
 
   <!-- HERO -->
@@ -996,7 +1037,15 @@
               <div class="price-row"><span class="size">Classic (350ml)</span><span class="price">₦2,000</span></div>
               <div class="price-row"><span class="size">Grande (400ml)</span><span class="price">₦2,800</span></div>
             </div>
-            <a class="btn btn-primary" href="https://wa.me/2347052793371?text=Hi%20Melonthies!%20I%27d%20like%20to%20order%20an%20Original%20Red%20smoothie." target="_blank" rel="noopener">Click to Order</a>
+            <div class="cart-controls">
+  <select class="size-select" aria-label="Size"></select>
+  <div class="qty-stepper">
+    <button type="button" class="qty-btn qty-minus" aria-label="Decrease quantity">−</button>
+    <span class="qty-value">1</span>
+    <button type="button" class="qty-btn qty-plus" aria-label="Increase quantity">+</button>
+  </div>
+  <button type="button" class="btn btn-primary add-to-cart-btn">Add to Cart</button>
+</div>
           </div>
         </article>
 
@@ -1012,7 +1061,15 @@
               <div class="price-row"><span class="size">Classic (350ml)</span><span class="price">₦2,200</span></div>
               <div class="price-row"><span class="size">Grande (400ml)</span><span class="price">₦3,000</span></div>
             </div>
-            <a class="btn btn-primary" href="https://wa.me/2347052793371?text=Hi%20Melonthies!%20I%27d%20like%20to%20order%20a%20Golden%20Glow%20smoothie." target="_blank" rel="noopener">Click to Order</a>
+            <div class="cart-controls">
+  <select class="size-select" aria-label="Size"></select>
+  <div class="qty-stepper">
+    <button type="button" class="qty-btn qty-minus" aria-label="Decrease quantity">−</button>
+    <span class="qty-value">1</span>
+    <button type="button" class="qty-btn qty-plus" aria-label="Increase quantity">+</button>
+  </div>
+  <button type="button" class="btn btn-primary add-to-cart-btn">Add to Cart</button>
+</div>
           </div>
         </article>
 
@@ -1028,7 +1085,15 @@
               <div class="price-row"><span class="size">Classic (350ml)</span><span class="price">₦2,200</span></div>
               <div class="price-row"><span class="size">Grande (400ml)</span><span class="price">₦3,000</span></div>
             </div>
-            <a class="btn btn-primary" href="https://wa.me/2347052793371?text=Hi%20Melonthies!%20I%27d%20like%20to%20order%20a%20Pink%20Dusk%20smoothie." target="_blank" rel="noopener">Click to Order</a>
+            <div class="cart-controls">
+  <select class="size-select" aria-label="Size"></select>
+  <div class="qty-stepper">
+    <button type="button" class="qty-btn qty-minus" aria-label="Decrease quantity">−</button>
+    <span class="qty-value">1</span>
+    <button type="button" class="qty-btn qty-plus" aria-label="Increase quantity">+</button>
+  </div>
+  <button type="button" class="btn btn-primary add-to-cart-btn">Add to Cart</button>
+</div>
           </div>
         </article>
 
@@ -1044,7 +1109,15 @@
               <div class="price-row"><span class="size">Classic (350ml)</span><span class="price">₦2,100</span></div>
               <div class="price-row"><span class="size">Grande (400ml)</span><span class="price">₦2,900</span></div>
             </div>
-            <a class="btn btn-primary" href="https://wa.me/2347052793371?text=Hi%20Melonthies!%20I%27d%20like%20to%20order%20a%20Rush%20Hour%20smoothie." target="_blank" rel="noopener">Click to Order</a>
+            <div class="cart-controls">
+  <select class="size-select" aria-label="Size"></select>
+  <div class="qty-stepper">
+    <button type="button" class="qty-btn qty-minus" aria-label="Decrease quantity">−</button>
+    <span class="qty-value">1</span>
+    <button type="button" class="qty-btn qty-plus" aria-label="Increase quantity">+</button>
+  </div>
+  <button type="button" class="btn btn-primary add-to-cart-btn">Add to Cart</button>
+</div>
           </div>
         </article>
 
@@ -1060,7 +1133,15 @@
               <div class="price-row"><span class="size">Classic (350ml)</span><span class="price">₦2,300</span></div>
               <div class="price-row"><span class="size">Grande (400ml)</span><span class="price">₦3,100</span></div>
             </div>
-            <a class="btn btn-primary" href="https://wa.me/2347052793371?text=Hi%20Melonthies!%20I%27d%20like%20to%20order%20a%20Tropic%20Blaze%20smoothie." target="_blank" rel="noopener">Click to Order</a>
+            <div class="cart-controls">
+  <select class="size-select" aria-label="Size"></select>
+  <div class="qty-stepper">
+    <button type="button" class="qty-btn qty-minus" aria-label="Decrease quantity">−</button>
+    <span class="qty-value">1</span>
+    <button type="button" class="qty-btn qty-plus" aria-label="Increase quantity">+</button>
+  </div>
+  <button type="button" class="btn btn-primary add-to-cart-btn">Add to Cart</button>
+</div>
           </div>
         </article>
 
@@ -1076,7 +1157,15 @@
               <div class="price-row"><span class="size">Classic (350ml)</span><span class="price">₦2,300</span></div>
               <div class="price-row"><span class="size">Grande (400ml)</span><span class="price">₦3,100</span></div>
             </div>
-            <a class="btn btn-primary" href="https://wa.me/2347052793371?text=Hi%20Melonthies!%20I%27d%20like%20to%20order%20a%20Midnight%20Bliss%20smoothie." target="_blank" rel="noopener">Click to Order</a>
+            <div class="cart-controls">
+  <select class="size-select" aria-label="Size"></select>
+  <div class="qty-stepper">
+    <button type="button" class="qty-btn qty-minus" aria-label="Decrease quantity">−</button>
+    <span class="qty-value">1</span>
+    <button type="button" class="qty-btn qty-plus" aria-label="Increase quantity">+</button>
+  </div>
+  <button type="button" class="btn btn-primary add-to-cart-btn">Add to Cart</button>
+</div>
           </div>
         </article>
 
@@ -1408,6 +1497,126 @@ async function loadHomeReviews(){
 }
 
 loadHomeReviews();
+</script>
+<script>
+(function(){
+  const WHATSAPP_NUMBER = '2347052793371';
+  const STORAGE_KEY = 'melonthiesCart';
+
+  function loadCart(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ return []; } }
+  function saveCart(cart){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(cart)); }catch(e){} }
+  function parsePrice(text){ return Number((text||'').replace(/[^\d]/g,'')) || 0; }
+  function formatPrice(n){ return '₦' + n.toLocaleString('en-NG'); }
+
+  let cart = loadCart();
+
+  document.querySelectorAll('.flavor-card').forEach(card => {
+    const select = card.querySelector('.size-select');
+    if (!select) return;
+    card.querySelectorAll('.price-row').forEach((row, i) => {
+      const size = row.querySelector('.size')?.textContent.trim() || `Option ${i+1}`;
+      const priceText = row.querySelector('.price')?.textContent.trim() || '';
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `${size} — ${priceText}`;
+      opt.dataset.price = parsePrice(priceText);
+      opt.dataset.size = size;
+      select.appendChild(opt);
+    });
+  });
+
+  document.querySelectorAll('.cart-controls').forEach(controls => {
+    const qtyValue = controls.querySelector('.qty-value');
+    controls.querySelector('.qty-minus').addEventListener('click', () => {
+      qtyValue.textContent = Math.max(1, parseInt(qtyValue.textContent,10) - 1);
+    });
+    controls.querySelector('.qty-plus').addEventListener('click', () => {
+      qtyValue.textContent = parseInt(qtyValue.textContent,10) + 1;
+    });
+  });
+
+  document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.flavor-card');
+      const controls = btn.closest('.cart-controls');
+      const flavor = card.querySelector('h3')?.textContent.trim() || 'Item';
+      const select = controls.querySelector('.size-select');
+      const opt = select.options[select.selectedIndex];
+      const size = opt.dataset.size;
+      const price = Number(opt.dataset.price);
+      const qty = parseInt(controls.querySelector('.qty-value').textContent,10);
+      const key = flavor + '|' + size;
+
+      const existing = cart.find(i => i.key === key);
+      if (existing){ existing.qty += qty; } else { cart.push({key, flavor, size, price, qty}); }
+      saveCart(cart);
+      renderCart();
+      openCart();
+      controls.querySelector('.qty-value').textContent = 1;
+    });
+  });
+
+  const cartItemsEl = document.getElementById('cartItems');
+  const cartTotalEl = document.getElementById('cartTotal');
+  const cartBadgeEl = document.getElementById('cartBadge');
+  const cartCheckoutBtn = document.getElementById('cartCheckoutBtn');
+
+  function renderCart(){
+    cartItemsEl.innerHTML = '';
+    if (!cart.length){ cartItemsEl.innerHTML = '<p class="cart-empty">Your cart is empty. Add a flavor to get started!</p>'; }
+    let total = 0, count = 0;
+    cart.forEach((item, idx) => {
+      total += item.price * item.qty;
+      count += item.qty;
+      const row = document.createElement('div');
+      row.className = 'cart-item';
+      row.innerHTML = `
+        <div>
+          <div class="cart-item-name">${item.flavor}</div>
+          <div class="cart-item-meta">${item.size}</div>
+          <div class="cart-item-controls">
+            <button type="button" class="qty-btn cart-qty-minus" aria-label="Decrease quantity">−</button>
+            <span class="qty-value">${item.qty}</span>
+            <button type="button" class="qty-btn cart-qty-plus" aria-label="Increase quantity">+</button>
+          </div>
+          <button type="button" class="cart-item-remove">Remove</button>
+        </div>
+        <div class="cart-item-price">${formatPrice(item.price * item.qty)}</div>`;
+      row.querySelector('.cart-qty-minus').addEventListener('click', () => {
+        if (item.qty > 1){ item.qty -= 1; } else { cart.splice(idx,1); }
+        saveCart(cart); renderCart();
+      });
+      row.querySelector('.cart-qty-plus').addEventListener('click', () => {
+        item.qty += 1; saveCart(cart); renderCart();
+      });
+      row.querySelector('.cart-item-remove').addEventListener('click', () => {
+        cart.splice(idx,1); saveCart(cart); renderCart();
+      });
+      cartItemsEl.appendChild(row);
+    });
+    cartTotalEl.textContent = formatPrice(total);
+    cartBadgeEl.textContent = count;
+
+    if (cart.length){
+      let msg = "Hi Melonthies! I'd like to order:\n";
+      cart.forEach(item => { msg += `- ${item.flavor} (${item.size}) x${item.qty} — ${formatPrice(item.price*item.qty)}\n`; });
+      msg += `\nTotal: ${formatPrice(total)}\n\nPickup or delivery: `;
+      cartCheckoutBtn.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+    } else {
+      cartCheckoutBtn.href = `https://wa.me/${WHATSAPP_NUMBER}`;
+    }
+  }
+
+  const overlay = document.getElementById('cartOverlay');
+  const drawer = document.getElementById('cartDrawer');
+  function openCart(){ overlay.classList.add('open'); drawer.classList.add('open'); }
+  function closeCart(){ overlay.classList.remove('open'); drawer.classList.remove('open'); }
+  document.getElementById('cartOpenBtn').addEventListener('click', () => { renderCart(); openCart(); });
+  document.getElementById('cartCloseBtn').addEventListener('click', closeCart);
+  overlay.addEventListener('click', closeCart);
+
+  renderCart();
+})();
 </script>
 </body>
 </html>
