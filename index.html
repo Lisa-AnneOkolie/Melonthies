@@ -970,7 +970,7 @@
   <div class="cart-drawer-items" id="cartItems"></div>
   <div class="cart-drawer-footer">
     <div class="cart-total-row"><span>Total</span><span id="cartTotal">₦0</span></div>
-    <a class="btn btn-primary cart-checkout-btn" id="cartCheckoutBtn" href="#" target="_blank" rel="noopener">Checkout on WhatsApp</a>
+    <a class="btn btn-primary cart-checkout-btn" id="cartCheckoutBtn" href="#" target="_blank" rel="noopener">Checkout</a>
   </div>
 </aside>
 <main id="main">
@@ -1600,7 +1600,7 @@ loadHomeReviews();
     if (cart.length){
       let msg = "Hi Melonthies! I'd like to order:\n";
       cart.forEach(item => { msg += `- ${item.flavor} (${item.size}) x${item.qty} — ${formatPrice(item.price*item.qty)}\n`; });
-      msg += `\nTotal: ${formatPrice(total)}\n\nPickup or delivery: `;
+      msg += `\nTotal: ${formatPrice(total)}\n\nThank You. `;
       cartCheckoutBtn.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     } else {
       cartCheckoutBtn.href = `https://wa.me/${WHATSAPP_NUMBER}`;
