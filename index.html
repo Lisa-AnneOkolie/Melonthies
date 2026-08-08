@@ -929,6 +929,11 @@
 .cart-drawer-footer{padding:20px 24px 26px;border-top:1px solid #eee;}
 .cart-total-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--display);font-weight:800;font-size:1.15rem;color:var(--seed);margin-bottom:14px;}
 .cart-checkout-btn{width:100%;justify-content:center;}
+.cart-checkout-fields{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.cart-checkout-fields input{width:100%;font-family:var(--body);font-size:0.9rem;padding:10px 12px;border-radius:12px;border:1.5px solid #ddd;background:var(--mist);outline:none;transition:border-color 0.15s ease;}
+.cart-checkout-fields input:focus{border-color:var(--rind);}
+.cart-checkout-fields input.field-error{border-color:var(--watermelon);background:#FDEDEC;}
+.cart-field-msg{font-size:0.76rem;color:var(--watermelon);min-height:14px;margin-top:-4px;}
 </style>
 </head>
 <body>
@@ -970,6 +975,11 @@
   <div class="cart-drawer-items" id="cartItems"></div>
   <div class="cart-drawer-footer">
     <div class="cart-total-row"><span>Total</span><span id="cartTotal">₦0</span></div>
+    <div class="cart-checkout-fields">
+      <input type="text" id="custName" placeholder="Your name" autocomplete="name">
+      <input type="text" id="custLocation" placeholder="Delivery address / location" autocomplete="street-address">
+      <div class="cart-field-msg" id="custFieldMsg"></div>
+    </div>
     <a class="btn btn-primary cart-checkout-btn" id="cartCheckoutBtn" href="#" target="_blank" rel="noopener">Checkout</a>
   </div>
 </aside>
@@ -1508,7 +1518,33 @@ loadHomeReviews();
   function parsePrice(text){ return Number((text||'').replace(/[^\d]/g,'')) || 0; }
   function formatPrice(n){ return '₦' + n.toLocaleString('en-NG'); }
 
-  let cart = loadCart();
+ let cart = loadCart();
+
+  const custNameInput = document.getElementById('custName');
+  const custLocationInput = document.getElementById('custLocation');
+  const custFieldMsg = document.getElementById('custFieldMsg');
+
+  // Remember the customer's details for next time
+  custNameInput.value = localStorage.getItem('melonthiesCustName') || '';
+  custLocationInput.value = localStorage.getItem('melonthiesCustLocation') || '';
+
+  function buildWhatsAppMessage(total){
+    let msg = "Hi Melonthies! I'd like to order:\n";
+    cart.forEach(item => { msg += `- ${item.flavor} (${item.size}) x${item.qty} — ${formatPrice(item.price*item.qty)}\n`; });
+    msg += `\nTotal: ${formatPrice(total)}`;
+    msg += `\nName: ${custNameInput.value.trim() || '-'}`;
+    msg += `\nLocation: ${custLocationInput.value.trim() || '-'}`;
+    msg += `\n\nThank You. `;
+    return msg;
+  }
+
+  [custNameInput, custLocationInput].forEach(inp => {
+    inp.addEventListener('input', () => {
+      inp.classList.remove('field-error');
+      custFieldMsg.textContent = '';
+      renderCart();
+    });
+  });
 
   document.querySelectorAll('.flavor-card').forEach(card => {
     const select = card.querySelector('.size-select');
@@ -1594,18 +1630,13 @@ loadHomeReviews();
       });
       cartItemsEl.appendChild(row);
     });
-    cartTotalEl.textContent = formatPrice(total);
+  cartTotalEl.textContent = formatPrice(total);
     cartBadgeEl.textContent = count;
 
-    if (cart.length){
-      let msg = "Hi Melonthies! I'd like to order:\n";
-      cart.forEach(item => { msg += `- ${item.flavor} (${item.size}) x${item.qty} — ${formatPrice(item.price*item.qty)}\n`; });
-      msg += `\nTotal: ${formatPrice(total)}\n\nThank You. `;
-      cartCheckoutBtn.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
-    } else {
-      cartCheckoutBtn.href = `https://wa.me/${WHATSAPP_NUMBER}`;
-    }
-  }
+    cartCheckoutBtn.href = cart.length
+      ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWhatsAppMessage(total))}`
+      : `https://wa.me/${WHATSAPP_NUMBER}`;
+  } 
 
   const overlay = document.getElementById('cartOverlay');
   const drawer = document.getElementById('cartDrawer');
@@ -1617,7 +1648,7 @@ loadHomeReviews();
 const SALES_API_URL = 'https://script.google.com/macros/s/AKfycbyn8bp3ZR8oGDgHRMQcF8Y2x52q3Tb_7qpIEDluM6OWa03VH5NkPnGfP3ArB7cGFZg3Cg/exec';
 const PUBLIC_ORDER_KEY = '9f3a7c1e2b8d4f6a';
 
-function logSaleToSheet(cart) {
+function logSaleToSheet(cart, name, location) {
   return fetch(SALES_API_URL, {
     method: 'POST',
     mode: 'no-cors',
@@ -1627,17 +1658,42 @@ function logSaleToSheet(cart) {
       action: 'addCartOrder',
       payload: {
         items: cart.map(item => ({ flavor: item.flavor, size: item.size, qty: item.qty, price: item.price })),
-        channel: 'WhatsApp'
+        channel: 'WhatsApp',
+        customer: `${name} — ${location}`
       }
     })
   });
 }
 
-cartCheckoutBtn.addEventListener('click', (e) => {
-  if (!cart.length) return;
+cartCheckoutBtn.addEventListener('click', (e) => { 
   e.preventDefault();
+
+  if (!cart.length){
+    custFieldMsg.textContent = 'Your cart is empty.';
+    return;
+  }
+
+  const name = custNameInput.value.trim();
+  const location = custLocationInput.value.trim();
+
+  if (!name){
+    custNameInput.classList.add('field-error');
+    custFieldMsg.textContent = 'Please enter your name.';
+    custNameInput.focus();
+    return;
+  }
+  if (!location){
+    custLocationInput.classList.add('field-error');
+    custFieldMsg.textContent = 'Please enter a delivery address / location.';
+    custLocationInput.focus();
+    return;
+  }
+
+  localStorage.setItem('melonthiesCustName', name);
+  localStorage.setItem('melonthiesCustLocation', location);
+
   const waHref = cartCheckoutBtn.href;
-  logSaleToSheet(cart).finally(() => {
+  logSaleToSheet(cart, name, location).finally(() => {
     cart = [];
     saveCart(cart);
     renderCart();
