@@ -1512,295 +1512,891 @@ async function loadHomeReviews(){
 
 loadHomeReviews();
 </script>
+```html
 <script>
 (function(){
   const WHATSAPP_NUMBER = '2347052793371';
   const STORAGE_KEY = 'melonthiesCart';
 
-  function loadCart(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ return []; } }
-  function saveCart(cart){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(cart)); }catch(e){} }
-  function parsePrice(text){ return Number((text||'').replace(/[^\d]/g,'')) || 0; }
-  function formatPrice(n){ return '₦' + n.toLocaleString('en-NG'); }
+  const SALES_API_URL = 'https://script.google.com/macros/s/AKfycbyn8bp3ZR8oGDgHRMQcF8Y2x52q3Tb_7qpIEDluM6OWa03VH5NkPnGfP3ArB7cGFZg3Cg/exec';
+  const PUBLIC_ORDER_KEY = '9f3a7c1e2b8d4f6a';
 
-  let cart = loadCart();
+  let cart = [];
+  let MELONTHIES_AVAILABILITY = {};
+
+  /* =========================
+     BASIC HELPERS
+  ========================= */
+
+  function loadCart(){
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    } catch(e) {
+      return [];
+    }
+  }
+
+  function saveCart(cart){
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+    } catch(e) {}
+  }
+
+  function parsePrice(text){
+    return Number((text || '').replace(/[^\d]/g, '')) || 0;
+  }
+
+  function formatPrice(n){
+    return '₦' + Number(n).toLocaleString('en-NG');
+  }
+
+  function isMelonthiesSoldOut(flavor, size){
+    const key = String(flavor).trim() + '|' + String(size).trim();
+    return MELONTHIES_AVAILABILITY[key] === 'SOLD_OUT';
+  }
+
+  /* =========================
+     CUSTOMER DETAILS
+  ========================= */
 
   const custNameInput = document.getElementById('custName');
   const custLocationInput = document.getElementById('custLocation');
   const custFieldMsg = document.getElementById('custFieldMsg');
 
-  // Remember the customer's details for next time
-  custNameInput.value = localStorage.getItem('melonthiesCustName') || '';
-  custLocationInput.value = localStorage.getItem('melonthiesCustLocation') || '';
+  if (custNameInput) {
+    custNameInput.value =
+      localStorage.getItem('melonthiesCustName') || '';
+  }
+
+  if (custLocationInput) {
+    custLocationInput.value =
+      localStorage.getItem('melonthiesCustLocation') || '';
+  }
+
+  /* =========================
+     WHATSAPP MESSAGE
+  ========================= */
 
   function buildWhatsAppMessage(total){
     let msg = "Hi Melonthies! I'd like to order:\n";
-    cart.forEach(item => { msg += `- ${item.flavor} (${item.size}) x${item.qty} — ${formatPrice(item.price*item.qty)}\n`; });
+
+    cart.forEach(item => {
+      msg += `- ${item.flavor} (${item.size}) x${item.qty} — ${formatPrice(item.price * item.qty)}\n`;
+    });
+
     msg += `\nTotal: ${formatPrice(total)}`;
-    msg += `\nName: ${custNameInput.value.trim() || '-'}`;
-    msg += `\nLocation: ${custLocationInput.value.trim() || '-'}`;
-    msg += `\n\nThank You. `;
+    msg += `\nName: ${custNameInput ? custNameInput.value.trim() || '-' : '-'}`;
+    msg += `\nLocation: ${custLocationInput ? custLocationInput.value.trim() || '-' : '-'}`;
+    msg += `\n\nThank You.`;
+
     return msg;
   }
 
-  [custNameInput, custLocationInput].forEach(inp => {
-    inp.addEventListener('input', () => {
-      inp.classList.remove('field-error');
-      custFieldMsg.textContent = '';
-      renderCart();
+  /* =========================
+     BUILD SIZE DROPDOWNS
+  ========================= */
+
+  function setupProductSelectors(){
+
+    document.querySelectorAll('.flavor-card').forEach(card => {
+
+      const select = card.querySelector('.size-select');
+      if (!select) return;
+
+      const flavor =
+        card.querySelector('h3')?.textContent.trim() || 'Item';
+
+      /*
+       * IMPORTANT:
+       * Clear the dropdown first.
+       * This prevents duplicate options.
+       */
+      select.innerHTML = '';
+
+      card.querySelectorAll('.price-row').forEach((row, index) => {
+
+        const sizeElement = row.querySelector('.size');
+        const priceElement = row.querySelector('.price');
+
+        if (!sizeElement || !priceElement) return;
+
+        /*
+         * Remove "(350ml)" and "(400ml)"
+         * from what the customer sees.
+         *
+         * Internally we still keep the complete size
+         * so the Operations page can match it.
+         */
+        const fullSize = sizeElement.textContent.trim();
+
+        let displaySize = fullSize
+          .replace(/\s*\(\s*\d+\s*ml\s*\)/i, '')
+          .trim();
+
+        const price = parsePrice(priceElement.textContent);
+
+        const soldOut =
+          isMelonthiesSoldOut(flavor, fullSize);
+
+        const option =
+          document.createElement('option');
+
+        option.value = index;
+
+        /*
+         * CUSTOMER SEES:
+         * Classic
+         * Grande
+         *
+         * or:
+         * Classic — Sold Out
+         */
+        option.textContent =
+          soldOut
+            ? `${displaySize} — Sold Out`
+            : displaySize;
+
+        /*
+         * DATA USED BY CART
+         */
+        option.dataset.price = price;
+        option.dataset.size = fullSize;
+        option.dataset.displaySize = displaySize;
+        option.dataset.soldOut =
+          soldOut ? '1' : '0';
+
+        option.disabled = soldOut;
+
+        select.appendChild(option);
+      });
+
+      updateProductButton(card);
     });
-  });
+  }
+
+  /* =========================
+     UPDATE ADD TO CART BUTTON
+  ========================= */
+
+  function updateProductButton(card){
+
+    const select =
+      card.querySelector('.size-select');
+
+    const button =
+      card.querySelector('.add-to-cart-btn');
+
+    if (!select || !button) return;
+
+    const options =
+      Array.from(select.options);
+
+    /*
+     * If no option is available,
+     * the entire product is sold out.
+     */
+    const availableOption =
+      options.find(option => !option.disabled);
+
+    if (!availableOption){
+
+      button.disabled = true;
+      button.textContent = 'Sold Out';
+      button.classList.add('sold-out-btn');
+
+      return;
+    }
+
+    /*
+     * If the currently selected option
+     * is sold out, automatically select
+     * the first available size.
+     */
+    const current =
+      select.options[select.selectedIndex];
+
+    if (!current || current.disabled){
+
+      select.value =
+        availableOption.value;
+    }
+
+    button.disabled = false;
+    button.textContent = 'Add to Cart';
+    button.classList.remove('sold-out-btn');
+  }
+
+  /* =========================
+     SIZE CHANGE
+  ========================= */
 
   document.querySelectorAll('.flavor-card').forEach(card => {
-    const select = card.querySelector('.size-select');
+
+    const select =
+      card.querySelector('.size-select');
+
     if (!select) return;
-    const flavor = card.querySelector('h3')?.textContent.trim() || 'Item';
 
-    card.querySelectorAll('.price-row').forEach((row, i) => {
-      const size = row.querySelector('.size')?.textContent.trim() || `Option ${i+1}`;
-      const priceText = row.querySelector('.price')?.textContent.trim() || '';
-      const soldOut = isMelonthiesSoldOut(flavor, size);
-      const opt = document.createElement('option');
-      opt.value = i;
-      opt.textContent = soldOut ? `${size} — Sold Out` : size;
-      opt.dataset.price = parsePrice(priceText);
-      opt.dataset.size = size;
-      opt.dataset.soldOut = soldOut ? '1' : '0';
-      opt.disabled = soldOut;
-      select.appendChild(opt);
-    });
+    select.addEventListener('change', function(){
 
-    const firstAvailable = [...select.options].findIndex(o => !o.disabled);
-    if (firstAvailable >= 0) select.selectedIndex = firstAvailable;
+      const option =
+        select.options[select.selectedIndex];
 
-    const refreshVariant = () => {
-      const opt = select.options[select.selectedIndex];
-      const soldOut = !opt || opt.disabled || opt.dataset.soldOut === '1';
-      const btn = card.querySelector('.add-to-cart-btn');
-      if(btn){
-        btn.disabled = soldOut;
-        btn.textContent = soldOut ? 'Sold Out' : 'Add to Cart';
-        btn.classList.toggle('sold-out-btn', soldOut);
-      }
-    };
-    select.addEventListener('change', refreshVariant);
-    refreshVariant();
-  });
+      if (!option) return;
 
-  document.querySelectorAll('.cart-controls').forEach(controls => {
-    const qtyValue = controls.querySelector('.qty-value');
-    controls.querySelector('.qty-minus').addEventListener('click', () => {
-      qtyValue.textContent = Math.max(1, parseInt(qtyValue.textContent,10) - 1);
-    });
-    controls.querySelector('.qty-plus').addEventListener('click', () => {
-      qtyValue.textContent = parseInt(qtyValue.textContent,10) + 1;
-    });
-  });
+      /*
+       * Never allow a sold-out option
+       * to be added to cart.
+       */
+      if (option.disabled ||
+          option.dataset.soldOut === '1') {
 
-  const cartItemsEl = document.getElementById('cartItems');
-  const cartTotalEl = document.getElementById('cartTotal');
-  const cartBadgeEl = document.getElementById('cartBadge');
-  const cartCheckoutBtn = document.getElementById('cartCheckoutBtn');
-
-  function renderCart(){
-    cartItemsEl.innerHTML = '';
-    if (!cart.length){ cartItemsEl.innerHTML = '<p class="cart-empty">Your cart is empty!</p>'; }
-    let total = 0, count = 0;
-    cart.forEach((item, idx) => {
-      total += item.price * item.qty;
-      count += item.qty;
-      const row = document.createElement('div');
-      row.className = 'cart-item';
-      row.innerHTML = `
-        <div>
-          <div class="cart-item-name">${item.flavor}</div>
-          <div class="cart-item-meta">${item.size}</div>
-          <div class="cart-item-controls">
-            <button type="button" class="qty-btn cart-qty-minus" aria-label="Decrease quantity">−</button>
-            <span class="qty-value">${item.qty}</span>
-            <button type="button" class="qty-btn cart-qty-plus" aria-label="Increase quantity">+</button>
-          </div>
-          <button type="button" class="cart-item-remove">Remove</button>
-        </div>
-        <div class="cart-item-price">${formatPrice(item.price * item.qty)}</div>`;
-      row.querySelector('.cart-qty-minus').addEventListener('click', () => {
-        if (item.qty > 1){ item.qty -= 1; } else { cart.splice(idx,1); }
-        saveCart(cart); renderCart();
-      });
-      row.querySelector('.cart-qty-plus').addEventListener('click', () => {
-        item.qty += 1; saveCart(cart); renderCart();
-      });
-      row.querySelector('.cart-item-remove').addEventListener('click', () => {
-        cart.splice(idx,1); saveCart(cart); renderCart();
-      });
-      cartItemsEl.appendChild(row);
-    });
-    cartTotalEl.textContent = formatPrice(total);
-    cartBadgeEl.textContent = count;
-
-    cartCheckoutBtn.href = cart.length
-      ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWhatsAppMessage(total))}`
-      : `https://wa.me/${WHATSAPP_NUMBER}`;
-  }
-
-  const overlay = document.getElementById('cartOverlay');
-  const drawer = document.getElementById('cartDrawer');
-  function openCart(){ overlay.classList.add('open'); drawer.classList.add('open'); }
-  function closeCart(){ overlay.classList.remove('open'); drawer.classList.remove('open'); }
-  document.getElementById('cartOpenBtn').addEventListener('click', () => { renderCart(); openCart(); });
-  document.getElementById('cartCloseBtn').addEventListener('click', closeCart);
-  overlay.addEventListener('click', closeCart);
-
-  const SALES_API_URL = 'https://script.google.com/macros/s/AKfycbyn8bp3ZR8oGDgHRMQcF8Y2x52q3Tb_7qpIEDluM6OWa03VH5NkPnGfP3ArB7cGFZg3Cg/exec';
-  const PUBLIC_ORDER_KEY = '9f3a7c1e2b8d4f6a';
-
-  let MELONTHIES_AVAILABILITY = {};
-
-  async function loadMelonthiesAvailability(){
-    try {
-      const res = await fetch(SALES_API_URL + '?action=availability&publicKey=' +
-        encodeURIComponent(PUBLIC_ORDER_KEY) + '&_=' + Date.now());
-      const json = await res.json();
-      if (!json.ok || !Array.isArray(json.data)) return;
-      MELONTHIES_AVAILABILITY = {};
-      json.data.forEach(row => {
-        const key = String(row.ProductName).trim() + '|' + String(row.Size).trim();
-        MELONTHIES_AVAILABILITY[key] = String(row.Status || 'AVAILABLE').toUpperCase();
-      });
-    } catch(e) {
-      MELONTHIES_AVAILABILITY = {};
-    }
-  }
-
-  function isMelonthiesSoldOut(flavor, size){
-    return MELONTHIES_AVAILABILITY[String(flavor).trim() + '|' + String(size).trim()] === 'SOLD_OUT';
-  }
-
-  function logSaleToSheet(cartToLog, name, location) {
-    return fetch(SALES_API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        publicKey: PUBLIC_ORDER_KEY,
-        action: 'addCartOrder',
-        payload: {
-          items: cartToLog.map(item => ({ flavor: item.flavor, size: item.size, qty: item.qty, price: item.price })),
-          channel: 'WhatsApp',
-          customer: `${name} — ${location}`
-        }
-      })
-    });
-  }
-
-  // Shared checkout logic: validate name/location, log the sale, open WhatsApp, clear cart.
-  function proceedToCheckout(){
-    if (!cart.length){
-      custFieldMsg.textContent = 'Your cart is empty.';
-      return false;
-    }
-
-    const name = custNameInput.value.trim();
-    const location = custLocationInput.value.trim();
-
-    if (!name){
-      custNameInput.classList.add('field-error');
-      custFieldMsg.textContent = 'Please enter your name.';
-      custNameInput.focus();
-      return false;
-    }
-    if (!location){
-      custLocationInput.classList.add('field-error');
-      custFieldMsg.textContent = 'Please enter a delivery address / location.';
-      custLocationInput.focus();
-      return false;
-    }
-
-    localStorage.setItem('melonthiesCustName', name);
-    localStorage.setItem('melonthiesCustLocation', location);
-
-    const waHref = cartCheckoutBtn.href;
-    const cartSnapshot = cart.slice();
-    logSaleToSheet(cartSnapshot, name, location).finally(() => {
-      cart = [];
-      saveCart(cart);
-      renderCart();
-      closeCart();
-    });
-    window.open(waHref, '_blank', 'noopener');
-    return true;
-  }
-
-  cartCheckoutBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    proceedToCheckout();
-  });
-
-  document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const card = btn.closest('.flavor-card');
-      const controls = btn.closest('.cart-controls');
-      const flavor = card.querySelector('h3')?.textContent.trim() || 'Item';
-      const select = controls.querySelector('.size-select');
-      const opt = select.options[select.selectedIndex];
-      if (!opt || opt.disabled || opt.dataset.soldOut === '1') return;
-
-      const size = opt.dataset.size;
-      const price = Number(opt.dataset.price);
-      const qty = parseInt(controls.querySelector('.qty-value').textContent,10);
-      const key = flavor + '|' + size;
-
-      if (isMelonthiesSoldOut(flavor, size)) {
-        alert(flavor + ' — ' + size + ' is sold out.');
+        updateProductButton(card);
         return;
       }
 
-      const existing = cart.find(i => i.key === key);
-      if (existing){ existing.qty += qty; } else { cart.push({key, flavor, size, price, qty}); }
-      saveCart(cart);
-      renderCart();
-      controls.querySelector('.qty-value').textContent = 1;
-
-      // If we already know who this customer is, skip the extra "Checkout" tap —
-      // log the sale and jump straight to WhatsApp. Otherwise open the drawer
-      // so they can enter their name/location once.
-      const hasSavedDetails = custNameInput.value.trim() && custLocationInput.value.trim();
-      if (hasSavedDetails) {
-        proceedToCheckout();
-      } else {
-        openCart();
-      }
+      updateProductButton(card);
     });
   });
 
-  loadMelonthiesAvailability().finally(() => {
-    document.querySelectorAll('.flavor-card').forEach(card => {
-      const select = card.querySelector('.size-select');
-      if (!select) return;
-      const flavor = card.querySelector('h3')?.textContent.trim() || 'Item';
+  /* =========================
+     QUANTITY BUTTONS
+  ========================= */
 
-      [...select.options].forEach(opt => {
-        const size = opt.dataset.size;
-        const soldOut = isMelonthiesSoldOut(flavor, size);
-        opt.disabled = soldOut;
-        opt.dataset.soldOut = soldOut ? '1' : '0';
-        opt.textContent = soldOut ? `${size} — Sold Out` : size;
+  document.querySelectorAll('.cart-controls')
+    .forEach(controls => {
+
+      const qtyValue =
+        controls.querySelector('.qty-value');
+
+      const minus =
+        controls.querySelector('.qty-minus');
+
+      const plus =
+        controls.querySelector('.qty-plus');
+
+      if (!qtyValue || !minus || !plus) return;
+
+      minus.addEventListener('click', () => {
+
+        const current =
+          parseInt(qtyValue.textContent, 10) || 1;
+
+        qtyValue.textContent =
+          Math.max(1, current - 1);
       });
 
-      const firstAvailable = [...select.options].findIndex(o => !o.disabled);
-      if(firstAvailable >= 0) select.selectedIndex = firstAvailable;
+      plus.addEventListener('click', () => {
 
-      const btn = card.querySelector('.add-to-cart-btn');
-      const opt = select.options[select.selectedIndex];
-      const soldOut = !opt || opt.disabled || opt.dataset.soldOut === '1';
-      if(btn){
-        btn.disabled = soldOut;
-        btn.textContent = soldOut ? 'Sold Out' : 'Add to Cart';
-        btn.classList.toggle('sold-out-btn', soldOut);
-      }
-    });
-    renderCart();
+        const current =
+          parseInt(qtyValue.textContent, 10) || 1;
+
+        qtyValue.textContent =
+          current + 1;
+      });
   });
+
+  /* =========================
+     CART ELEMENTS
+  ========================= */
+
+  const cartItemsEl =
+    document.getElementById('cartItems');
+
+  const cartTotalEl =
+    document.getElementById('cartTotal');
+
+  const cartBadgeEl =
+    document.getElementById('cartBadge');
+
+  const cartCheckoutBtn =
+    document.getElementById('cartCheckoutBtn');
+
+  /* =========================
+     RENDER CART
+  ========================= */
+
+  function renderCart(){
+
+    if (!cartItemsEl) return;
+
+    cartItemsEl.innerHTML = '';
+
+    if (!cart.length){
+
+      cartItemsEl.innerHTML =
+        '<p class="cart-empty">Your cart is empty!</p>';
+    }
+
+    let total = 0;
+    let count = 0;
+
+    cart.forEach((item, index) => {
+
+      total += item.price * item.qty;
+      count += item.qty;
+
+      const row =
+        document.createElement('div');
+
+      row.className = 'cart-item';
+
+      row.innerHTML = `
+        <div>
+          <div class="cart-item-name">
+            ${item.flavor}
+          </div>
+
+          <div class="cart-item-meta">
+            ${item.size}
+          </div>
+
+          <div class="cart-item-controls">
+
+            <button
+              type="button"
+              class="qty-btn cart-qty-minus"
+              aria-label="Decrease quantity">
+              −
+            </button>
+
+            <span class="qty-value">
+              ${item.qty}
+            </span>
+
+            <button
+              type="button"
+              class="qty-btn cart-qty-plus"
+              aria-label="Increase quantity">
+              +
+            </button>
+
+          </div>
+
+          <button
+            type="button"
+            class="cart-item-remove">
+            Remove
+          </button>
+
+        </div>
+
+        <div class="cart-item-price">
+          ${formatPrice(item.price * item.qty)}
+        </div>
+      `;
+
+      row.querySelector('.cart-qty-minus')
+        .addEventListener('click', () => {
+
+          if (item.qty > 1){
+            item.qty -= 1;
+          } else {
+            cart.splice(index, 1);
+          }
+
+          saveCart(cart);
+          renderCart();
+        });
+
+      row.querySelector('.cart-qty-plus')
+        .addEventListener('click', () => {
+
+          item.qty += 1;
+
+          saveCart(cart);
+          renderCart();
+        });
+
+      row.querySelector('.cart-item-remove')
+        .addEventListener('click', () => {
+
+          cart.splice(index, 1);
+
+          saveCart(cart);
+          renderCart();
+        });
+
+      cartItemsEl.appendChild(row);
+    });
+
+    if (cartTotalEl){
+      cartTotalEl.textContent =
+        formatPrice(total);
+    }
+
+    if (cartBadgeEl){
+      cartBadgeEl.textContent = count;
+    }
+
+    if (cartCheckoutBtn){
+
+      if (cart.length){
+
+        const message =
+          buildWhatsAppMessage(total);
+
+        cartCheckoutBtn.href =
+          `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+
+      } else {
+
+        cartCheckoutBtn.href =
+          `https://wa.me/${WHATSAPP_NUMBER}`;
+      }
+    }
+  }
+
+  /* =========================
+     CART DRAWER
+  ========================= */
+
+  const overlay =
+    document.getElementById('cartOverlay');
+
+  const drawer =
+    document.getElementById('cartDrawer');
+
+  function openCart(){
+
+    if (overlay)
+      overlay.classList.add('open');
+
+    if (drawer)
+      drawer.classList.add('open');
+  }
+
+  function closeCart(){
+
+    if (overlay)
+      overlay.classList.remove('open');
+
+    if (drawer)
+      drawer.classList.remove('open');
+  }
+
+  const cartOpenBtn =
+    document.getElementById('cartOpenBtn');
+
+  const cartCloseBtn =
+    document.getElementById('cartCloseBtn');
+
+  if (cartOpenBtn){
+
+    cartOpenBtn.addEventListener(
+      'click',
+      () => {
+
+        renderCart();
+        openCart();
+      }
+    );
+  }
+
+  if (cartCloseBtn){
+    cartCloseBtn.addEventListener(
+      'click',
+      closeCart
+    );
+  }
+
+  if (overlay){
+    overlay.addEventListener(
+      'click',
+      closeCart
+    );
+  }
+
+  /* =========================
+     AVAILABILITY FROM OPERATIONS
+  ========================= */
+
+  async function loadMelonthiesAvailability(){
+
+    try {
+
+      const res =
+        await fetch(
+          SALES_API_URL +
+          '?action=availability' +
+          '&publicKey=' +
+          encodeURIComponent(PUBLIC_ORDER_KEY) +
+          '&_=' +
+          Date.now()
+        );
+
+      const json =
+        await res.json();
+
+      if (!json.ok ||
+          !Array.isArray(json.data)) {
+
+        return;
+      }
+
+      MELONTHIES_AVAILABILITY = {};
+
+      json.data.forEach(row => {
+
+        const product =
+          String(row.ProductName || '').trim();
+
+        const size =
+          String(row.Size || '').trim();
+
+        const status =
+          String(row.Status || 'AVAILABLE')
+            .trim()
+            .toUpperCase();
+
+        const key =
+          product + '|' + size;
+
+        MELONTHIES_AVAILABILITY[key] =
+          status;
+      });
+
+    } catch(error){
+
+      console.error(
+        'Availability could not be loaded:',
+        error
+      );
+
+      MELONTHIES_AVAILABILITY = {};
+    }
+  }
+
+  /* =========================
+     LOG ORDER
+  ========================= */
+
+  function logSaleToSheet(
+    cartToLog,
+    name,
+    location
+  ){
+
+    return fetch(
+      SALES_API_URL,
+      {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type':
+            'text/plain;charset=utf-8'
+        },
+
+        body: JSON.stringify({
+
+          publicKey:
+            PUBLIC_ORDER_KEY,
+
+          action:
+            'addCartOrder',
+
+          payload: {
+
+            items:
+              cartToLog.map(item => ({
+                flavor: item.flavor,
+                size: item.size,
+                qty: item.qty,
+                price: item.price
+              })),
+
+            channel:
+              'WhatsApp',
+
+            customer:
+              `${name} — ${location}`
+          }
+        })
+      }
+    );
+  }
+
+  /* =========================
+     CHECKOUT
+  ========================= */
+
+  function proceedToCheckout(){
+
+    if (!cart.length){
+
+      if (custFieldMsg)
+        custFieldMsg.textContent =
+          'Your cart is empty.';
+
+      return false;
+    }
+
+    const name =
+      custNameInput
+        ? custNameInput.value.trim()
+        : '';
+
+    const location =
+      custLocationInput
+        ? custLocationInput.value.trim()
+        : '';
+
+    if (!name){
+
+      if (custNameInput)
+        custNameInput.classList.add(
+          'field-error'
+        );
+
+      if (custFieldMsg)
+        custFieldMsg.textContent =
+          'Please enter your name.';
+
+      if (custNameInput)
+        custNameInput.focus();
+
+      return false;
+    }
+
+    if (!location){
+
+      if (custLocationInput)
+        custLocationInput.classList.add(
+          'field-error'
+        );
+
+      if (custFieldMsg)
+        custFieldMsg.textContent =
+          'Please enter a delivery address / location.';
+
+      if (custLocationInput)
+        custLocationInput.focus();
+
+      return false;
+    }
+
+    localStorage.setItem(
+      'melonthiesCustName',
+      name
+    );
+
+    localStorage.setItem(
+      'melonthiesCustLocation',
+      location
+    );
+
+    const waHref =
+      cartCheckoutBtn.href;
+
+    const cartSnapshot =
+      cart.slice();
+
+    logSaleToSheet(
+      cartSnapshot,
+      name,
+      location
+    ).finally(() => {
+
+      cart = [];
+
+      saveCart(cart);
+
+      renderCart();
+
+      closeCart();
+    });
+
+    window.open(
+      waHref,
+      '_blank',
+      'noopener'
+    );
+
+    return true;
+  }
+
+  if (custNameInput){
+    custNameInput.addEventListener(
+      'input',
+      () => {
+
+        custNameInput.classList
+          .remove('field-error');
+
+        if (custFieldMsg)
+          custFieldMsg.textContent = '';
+
+        renderCart();
+      }
+    );
+  }
+
+  if (custLocationInput){
+    custLocationInput.addEventListener(
+      'input',
+      () => {
+
+        custLocationInput.classList
+          .remove('field-error');
+
+        if (custFieldMsg)
+          custFieldMsg.textContent = '';
+
+        renderCart();
+      }
+    );
+  }
+
+  if (cartCheckoutBtn){
+
+    cartCheckoutBtn.addEventListener(
+      'click',
+      event => {
+
+        event.preventDefault();
+
+        proceedToCheckout();
+      }
+    );
+  }
+
+  /* =========================
+     ADD TO CART
+  ========================= */
+
+  document.querySelectorAll(
+    '.add-to-cart-btn'
+  ).forEach(button => {
+
+    button.addEventListener(
+      'click',
+      () => {
+
+        const card =
+          button.closest('.flavor-card');
+
+        if (!card) return;
+
+        const controls =
+          button.closest('.cart-controls');
+
+        const select =
+          controls.querySelector(
+            '.size-select'
+          );
+
+        const option =
+          select.options[
+            select.selectedIndex
+          ];
+
+        if (
+          !option ||
+          option.disabled ||
+          option.dataset.soldOut === '1'
+        ){
+
+          return;
+        }
+
+        const flavor =
+          card.querySelector('h3')
+            ?.textContent.trim() || 'Item';
+
+        const size =
+          option.dataset.size;
+
+        const price =
+          Number(option.dataset.price);
+
+        const qty =
+          parseInt(
+            controls
+              .querySelector('.qty-value')
+              .textContent,
+            10
+          ) || 1;
+
+        /*
+         * Double-check availability
+         * immediately before adding.
+         */
+        if (
+          isMelonthiesSoldOut(
+            flavor,
+            size
+          )
+        ){
+
+          alert(
+            `${flavor} — ${size} is sold out.`
+          );
+
+          return;
+        }
+
+        const key =
+          flavor + '|' + size;
+
+        const existing =
+          cart.find(item =>
+            item.key === key
+          );
+
+        if (existing){
+
+          existing.qty += qty;
+
+        } else {
+
+          cart.push({
+            key,
+            flavor,
+            size,
+            price,
+            qty
+          });
+        }
+
+        saveCart(cart);
+        renderCart();
+
+        /*
+         * Reset quantity to 1.
+         */
+        controls.querySelector(
+          '.qty-value'
+        ).textContent = '1';
+
+        /*
+         * Open cart after adding.
+         */
+        openCart();
+      }
+    );
+  });
+
+  /* =========================
+     INITIALISE
+  ========================= */
+
+  cart = loadCart();
+
+  /*
+   * First load availability.
+   * THEN build the dropdowns.
+   *
+   * This is the important fix.
+   */
+  loadMelonthiesAvailability()
+    .finally(() => {
+
+      setupProductSelectors();
+
+      renderCart();
+    });
+
 })();
-</script>
+</script> 
 </body>
 </html>
