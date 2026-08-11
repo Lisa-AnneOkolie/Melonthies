@@ -793,8 +793,7 @@ function renderSaleForm(inner, existing){
       <div class="fld"><label>Channel</label>
         <select id="f_Channel">${['WhatsApp','Walk-in','Delivery','Instagram'].map(c=>`<option ${existing&&existing.Channel===c?'selected':''}>${c}</option>`).join('')}</select>
       </div>
-    </div>
-    <div class="fld"><label>Customer (name / phone / address — goes on the invoice)</label><input id="f_Customer" value="${existing?existing.Customer||'':''}" placeholder="e.g. Ada, 0803 000 0000, Marina Rd"></div>
+    </div> 
     <div class="fld"><label>Notes</label><textarea id="f_Notes">${existing?existing.Notes:''}</textarea></div>
     <div class="hint">Deducts the sold quantity from Inventory's finished-goods stock for this product. New sales start as “Invoiced” — use “Mark paid” on the table once payment lands to unlock the Receipt.</div>
   `;
