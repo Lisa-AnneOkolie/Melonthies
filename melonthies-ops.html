@@ -837,7 +837,7 @@ function generateDocHTML(sale, kind){
   const lineTotal = fmtMoney(sale.Total);
   const statusLine = isReceipt
     ? `Paid on ${sale.PaidDate || sale.Date}`
-    : `Payment: OPAY · 6480467191`;
+    : `Payment: OPAY · 6480467191 · lisa-anne okolie`;
   let items = [];
   try { items = sale.ItemsJSON ? JSON.parse(sale.ItemsJSON) : []; } catch(e) { items = []; }
   const rows = items.length ? items : [{
