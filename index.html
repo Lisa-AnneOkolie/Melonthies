@@ -1522,7 +1522,7 @@ loadHomeReviews();
   function parsePrice(text){ return Number((text||'').replace(/[^\d]/g,'')) || 0; }
   function formatPrice(n){ return '₦' + n.toLocaleString('en-NG'); }
 
- let cart = loadCart();
+  let cart = loadCart();
 
   const custNameInput = document.getElementById('custName');
   const custLocationInput = document.getElementById('custLocation');
@@ -1561,7 +1561,7 @@ loadHomeReviews();
       const soldOut = isMelonthiesSoldOut(flavor, size);
       const opt = document.createElement('option');
       opt.value = i;
-      opt.textContent = soldOut ? `${size} — SOLD OUT` : `${size} — ${priceText}`;
+      opt.textContent = soldOut ? `${size} — Sold Out` : size;
       opt.dataset.price = parsePrice(priceText);
       opt.dataset.size = size;
       opt.dataset.soldOut = soldOut ? '1' : '0';
@@ -1593,34 +1593,6 @@ loadHomeReviews();
     });
     controls.querySelector('.qty-plus').addEventListener('click', () => {
       qtyValue.textContent = parseInt(qtyValue.textContent,10) + 1;
-    });
-  });
-
-  document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const card = btn.closest('.flavor-card');
-      const controls = btn.closest('.cart-controls');
-      const flavor = card.querySelector('h3')?.textContent.trim() || 'Item';
-      const select = controls.querySelector('.size-select');
-      const opt = select.options[select.selectedIndex];
-      if (!opt || opt.disabled || opt.dataset.soldOut === '1') return;
-
-      const size = opt.dataset.size;
-      const price = Number(opt.dataset.price);
-      const qty = parseInt(controls.querySelector('.qty-value').textContent,10);
-      const key = flavor + '|' + size;
-
-      if (isMelonthiesSoldOut(flavor, size)) {
-        alert(flavor + ' — ' + size + ' is sold out.');
-        return;
-      }
-
-      const existing = cart.find(i => i.key === key);
-      if (existing){ existing.qty += qty; } else { cart.push({key, flavor, size, price, qty}); }
-      saveCart(cart);
-      renderCart();
-      openCart();
-      controls.querySelector('.qty-value').textContent = 1;
     });
   });
 
@@ -1662,13 +1634,13 @@ loadHomeReviews();
       });
       cartItemsEl.appendChild(row);
     });
-  cartTotalEl.textContent = formatPrice(total);
+    cartTotalEl.textContent = formatPrice(total);
     cartBadgeEl.textContent = count;
 
     cartCheckoutBtn.href = cart.length
       ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWhatsAppMessage(total))}`
       : `https://wa.me/${WHATSAPP_NUMBER}`;
-  } 
+  }
 
   const overlay = document.getElementById('cartOverlay');
   const drawer = document.getElementById('cartDrawer');
@@ -1677,84 +1649,129 @@ loadHomeReviews();
   document.getElementById('cartOpenBtn').addEventListener('click', () => { renderCart(); openCart(); });
   document.getElementById('cartCloseBtn').addEventListener('click', closeCart);
   overlay.addEventListener('click', closeCart);
-const SALES_API_URL = 'https://script.google.com/macros/s/AKfycbyn8bp3ZR8oGDgHRMQcF8Y2x52q3Tb_7qpIEDluM6OWa03VH5NkPnGfP3ArB7cGFZg3Cg/exec';
-const PUBLIC_ORDER_KEY = '9f3a7c1e2b8d4f6a';
 
-let MELONTHIES_AVAILABILITY = {};
+  const SALES_API_URL = 'https://script.google.com/macros/s/AKfycbyn8bp3ZR8oGDgHRMQcF8Y2x52q3Tb_7qpIEDluM6OWa03VH5NkPnGfP3ArB7cGFZg3Cg/exec';
+  const PUBLIC_ORDER_KEY = '9f3a7c1e2b8d4f6a';
 
-async function loadMelonthiesAvailability(){
-  try {
-    const res = await fetch(SALES_API_URL + '?action=availability&publicKey=' +
-      encodeURIComponent(PUBLIC_ORDER_KEY) + '&_=' + Date.now());
-    const json = await res.json();
-    if (!json.ok || !Array.isArray(json.data)) return;
-    MELONTHIES_AVAILABILITY = {};
-    json.data.forEach(row => {
-      const key = String(row.ProductName).trim() + '|' + String(row.Size).trim();
-      MELONTHIES_AVAILABILITY[key] = String(row.Status || 'AVAILABLE').toUpperCase();
+  let MELONTHIES_AVAILABILITY = {};
+
+  async function loadMelonthiesAvailability(){
+    try {
+      const res = await fetch(SALES_API_URL + '?action=availability&publicKey=' +
+        encodeURIComponent(PUBLIC_ORDER_KEY) + '&_=' + Date.now());
+      const json = await res.json();
+      if (!json.ok || !Array.isArray(json.data)) return;
+      MELONTHIES_AVAILABILITY = {};
+      json.data.forEach(row => {
+        const key = String(row.ProductName).trim() + '|' + String(row.Size).trim();
+        MELONTHIES_AVAILABILITY[key] = String(row.Status || 'AVAILABLE').toUpperCase();
+      });
+    } catch(e) {
+      MELONTHIES_AVAILABILITY = {};
+    }
+  }
+
+  function isMelonthiesSoldOut(flavor, size){
+    return MELONTHIES_AVAILABILITY[String(flavor).trim() + '|' + String(size).trim()] === 'SOLD_OUT';
+  }
+
+  function logSaleToSheet(cartToLog, name, location) {
+    return fetch(SALES_API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        publicKey: PUBLIC_ORDER_KEY,
+        action: 'addCartOrder',
+        payload: {
+          items: cartToLog.map(item => ({ flavor: item.flavor, size: item.size, qty: item.qty, price: item.price })),
+          channel: 'WhatsApp',
+          customer: `${name} — ${location}`
+        }
+      })
     });
-  } catch(e) {
-    MELONTHIES_AVAILABILITY = {};
   }
-}
 
-function isMelonthiesSoldOut(flavor, size){
-  return MELONTHIES_AVAILABILITY[String(flavor).trim() + '|' + String(size).trim()] === 'SOLD_OUT';
-}
+  // Shared checkout logic: validate name/location, log the sale, open WhatsApp, clear cart.
+  function proceedToCheckout(){
+    if (!cart.length){
+      custFieldMsg.textContent = 'Your cart is empty.';
+      return false;
+    }
 
-function logSaleToSheet(cart, name, location) {
-  return fetch(SALES_API_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({
-      publicKey: PUBLIC_ORDER_KEY,
-      action: 'addCartOrder',
-      payload: {
-        items: cart.map(item => ({ flavor: item.flavor, size: item.size, qty: item.qty, price: item.price })),
-        channel: 'WhatsApp',
-        customer: `${name} — ${location}`
+    const name = custNameInput.value.trim();
+    const location = custLocationInput.value.trim();
+
+    if (!name){
+      custNameInput.classList.add('field-error');
+      custFieldMsg.textContent = 'Please enter your name.';
+      custNameInput.focus();
+      return false;
+    }
+    if (!location){
+      custLocationInput.classList.add('field-error');
+      custFieldMsg.textContent = 'Please enter a delivery address / location.';
+      custLocationInput.focus();
+      return false;
+    }
+
+    localStorage.setItem('melonthiesCustName', name);
+    localStorage.setItem('melonthiesCustLocation', location);
+
+    const waHref = cartCheckoutBtn.href;
+    const cartSnapshot = cart.slice();
+    logSaleToSheet(cartSnapshot, name, location).finally(() => {
+      cart = [];
+      saveCart(cart);
+      renderCart();
+      closeCart();
+    });
+    window.open(waHref, '_blank', 'noopener');
+    return true;
+  }
+
+  cartCheckoutBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    proceedToCheckout();
+  });
+
+  document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.flavor-card');
+      const controls = btn.closest('.cart-controls');
+      const flavor = card.querySelector('h3')?.textContent.trim() || 'Item';
+      const select = controls.querySelector('.size-select');
+      const opt = select.options[select.selectedIndex];
+      if (!opt || opt.disabled || opt.dataset.soldOut === '1') return;
+
+      const size = opt.dataset.size;
+      const price = Number(opt.dataset.price);
+      const qty = parseInt(controls.querySelector('.qty-value').textContent,10);
+      const key = flavor + '|' + size;
+
+      if (isMelonthiesSoldOut(flavor, size)) {
+        alert(flavor + ' — ' + size + ' is sold out.');
+        return;
       }
-    })
+
+      const existing = cart.find(i => i.key === key);
+      if (existing){ existing.qty += qty; } else { cart.push({key, flavor, size, price, qty}); }
+      saveCart(cart);
+      renderCart();
+      controls.querySelector('.qty-value').textContent = 1;
+
+      // If we already know who this customer is, skip the extra "Checkout" tap —
+      // log the sale and jump straight to WhatsApp. Otherwise open the drawer
+      // so they can enter their name/location once.
+      const hasSavedDetails = custNameInput.value.trim() && custLocationInput.value.trim();
+      if (hasSavedDetails) {
+        proceedToCheckout();
+      } else {
+        openCart();
+      }
+    });
   });
-}
 
-cartCheckoutBtn.addEventListener('click', (e) => { 
-  e.preventDefault();
-
-  if (!cart.length){
-    custFieldMsg.textContent = 'Your cart is empty.';
-    return;
-  }
-
-  const name = custNameInput.value.trim();
-  const location = custLocationInput.value.trim();
-
-  if (!name){
-    custNameInput.classList.add('field-error');
-    custFieldMsg.textContent = 'Please enter your name.';
-    custNameInput.focus();
-    return;
-  }
-  if (!location){
-    custLocationInput.classList.add('field-error');
-    custFieldMsg.textContent = 'Please enter a delivery address / location.';
-    custLocationInput.focus();
-    return;
-  }
-
-  localStorage.setItem('melonthiesCustName', name);
-  localStorage.setItem('melonthiesCustLocation', location);
-
-  const waHref = cartCheckoutBtn.href;
-  logSaleToSheet(cart, name, location).finally(() => {
-    cart = [];
-    saveCart(cart);
-    renderCart();
-    closeCart();
-  });
-  window.open(waHref, '_blank', 'noopener');
-});
   loadMelonthiesAvailability().finally(() => {
     document.querySelectorAll('.flavor-card').forEach(card => {
       const select = card.querySelector('.size-select');
@@ -1766,9 +1783,7 @@ cartCheckoutBtn.addEventListener('click', (e) => {
         const soldOut = isMelonthiesSoldOut(flavor, size);
         opt.disabled = soldOut;
         opt.dataset.soldOut = soldOut ? '1' : '0';
-        opt.textContent = soldOut
-          ? `${size} — SOLD OUT`
-          : `${size} — ${formatPrice(Number(opt.dataset.price))}`;
+        opt.textContent = soldOut ? `${size} — Sold Out` : size;
       });
 
       const firstAvailable = [...select.options].findIndex(o => !o.disabled);
