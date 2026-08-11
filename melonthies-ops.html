@@ -884,8 +884,959 @@ function generateDocHTML(sale, kind){
     <div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div>
   </div></body></html>`;
 }
-function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// ---------- INVOICE / RECEIPT ----------
+// Prints via the browser's native print dialog.
+// Dates are displayed as YYYY-MM-DD only.
+// Uses the exact Melonthies logo from BUSINESS_INFO.logo.
 
+function openDoc(sale, kind){
+
+  if(!sale){
+    toast('Could not find that sale.', true);
+    return;
+  }
+
+  const w = window.open(
+    '',
+    '_blank',
+    'width=480,height=720'
+  );
+
+  if(!w){
+    toast(
+      'Your browser blocked the popup — allow popups for this site.',
+      true
+    );
+    return;
+  }
+
+  w.document.write(
+    generateDocHTML(sale, kind)
+  );
+
+  w.document.close();
+  w.focus();
+
+  setTimeout(()=>{
+    try{
+      w.print();
+    }catch(e){}
+  },300);
+
+}
+
+
+/*
+ * DATE FORMATTER
+ *
+ * Converts:
+ *
+ * 2026-08-05
+ * 2026-08-05T07:00:00.000Z
+ *
+ * into:
+ *
+ * 2026-08-05
+ */
+
+function formatDocDate(value){
+
+  if(!value){
+    return '';
+  }
+
+  const str = String(value);
+
+  /*
+   * If the value is already:
+   * YYYY-MM-DD
+   */
+  if(
+    /^\d{4}-\d{2}-\d{2}$/.test(str)
+  ){
+    return str;
+  }
+
+  /*
+   * If the value is an ISO timestamp:
+   * 2026-08-05T07:00:00.000Z
+   *
+   * Only take the date before "T".
+   */
+  if(str.indexOf('T') !== -1){
+    return str.split('T')[0];
+  }
+
+  /*
+   * Handle actual JavaScript Date objects.
+   */
+  if(value instanceof Date){
+
+    if(isNaN(value.getTime())){
+      return '';
+    }
+
+    return value.toISOString().split('T')[0];
+  }
+
+  /*
+   * Final fallback.
+   */
+  const d = new Date(value);
+
+  if(!isNaN(d.getTime())){
+    return d.toISOString().split('T')[0];
+  }
+
+  return str;
+}
+
+
+function generateDocHTML(sale, kind){
+
+  const isReceipt =
+    kind === 'receipt';
+
+  const docLabel =
+    isReceipt
+      ? 'Receipt'
+      : 'Invoice';
+
+
+  /*
+   * Order number
+   */
+  const orderNo =
+    Number(sale.OrderNo) || 0;
+
+  const displayNo =
+    orderNo
+      ? String(orderNo)
+      : String(
+          (STATE.db.Sales || [])
+            .findIndex(
+              x => x.ID === sale.ID
+            ) + 1
+        ).replace(
+          /^0$/,
+          '1'
+        );
+
+
+  const docNo =
+    (
+      isReceipt
+        ? 'RCPT-'
+        : 'INV-'
+    ) +
+    displayNo.padStart(4,'0');
+
+
+  /*
+   * DATE
+   *
+   * Always YYYY-MM-DD.
+   * Never show T07:00:00.000Z.
+   */
+  const saleDate =
+    formatDocDate(
+      sale.Date
+    );
+
+  const paidDate =
+    formatDocDate(
+      sale.PaidDate
+    );
+
+
+  const lineTotal =
+    fmtMoney(
+      sale.Total
+    );
+
+
+  /*
+   * Invoice / receipt status line.
+   */
+  const statusLine =
+    isReceipt
+
+      ? `Paid on ${paidDate || saleDate}`
+
+      : `Payment: ${BUSINESS_INFO.bank} · ${BUSINESS_INFO.accountnumber}`;
+
+
+  /*
+   * Get line items.
+   */
+  let items = [];
+
+  try{
+
+    items =
+      sale.ItemsJSON
+        ? JSON.parse(
+            sale.ItemsJSON
+          )
+        : [];
+
+  }catch(e){
+
+    items = [];
+
+  }
+
+
+  /*
+   * Fallback for older single-product sales.
+   */
+  const rows =
+    items.length
+
+      ? items
+
+      : [{
+          ProductName:
+            sale.ProductName,
+
+          Size:
+            sale.Size,
+
+          Quantity:
+            sale.Quantity,
+
+          UnitPrice:
+            sale.UnitPrice,
+
+          LineTotal:
+            sale.Total
+        }];
+
+
+  /*
+   * Build product rows.
+   */
+  const itemRowsHtml =
+    rows
+      .map(li => `
+
+        <tr>
+
+          <td>
+            <strong>
+              ${escapeHtml(
+                li.ProductName
+              )}
+            </strong>
+
+            <small>
+              ${escapeHtml(
+                li.Size || ''
+              )}
+            </small>
+          </td>
+
+          <td>
+            ${li.Quantity}
+          </td>
+
+          <td>
+            ${fmtMoney(
+              li.UnitPrice
+            )}
+          </td>
+
+          <td>
+            ${fmtMoney(
+              li.LineTotal
+            )}
+          </td>
+
+        </tr>
+
+      `)
+      .join('');
+
+
+  /*
+   * IMPORTANT:
+   *
+   * BUSINESS_INFO.logo is the SAME
+   * base64 logo used by the website
+   * favicon/web icon.
+   *
+   * BUSINESS_INFO.name is:
+   * Melonthies
+   *
+   * The visual brand below uses:
+   * Melon + italic thies
+   * to match the website.
+   */
+
+  return `
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>
+  ${docLabel} ${docNo}
+</title>
+
+<style>
+
+  *{
+    box-sizing:border-box;
+  }
+
+  body{
+
+    font-family:
+      Arial,
+      Helvetica,
+      sans-serif;
+
+    color:#1F2A22;
+
+    margin:0;
+
+    background:#fff;
+
+  }
+
+
+  .paper{
+
+    width:100%;
+
+    max-width:620px;
+
+    margin:0 auto;
+
+    padding:36px 42px 44px;
+
+    background:#fff;
+
+  }
+
+
+  /*
+   * HEADER
+   */
+
+  .top{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:flex-start;
+
+    padding-bottom:22px;
+
+    border-bottom:
+      2px solid #2D6A2F;
+
+  }
+
+
+  .brand-area{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+  }
+
+
+  .brand-logo{
+
+    width:52px;
+
+    height:52px;
+
+    object-fit:contain;
+
+    flex-shrink:0;
+
+  }
+
+
+  .brand{
+
+    font-size:25px;
+
+    font-weight:700;
+
+    letter-spacing:-.02em;
+
+    color:#1F2A22;
+
+  }
+
+
+  /*
+   * Match website branding:
+   * Melon + italic thies
+   */
+
+  .brand em{
+
+    font-style:italic;
+
+    color:#2D6A2F;
+
+  }
+
+
+  .tag{
+
+    font-size:11px;
+
+    color:#6B7B6D;
+
+    margin-top:3px;
+
+  }
+
+
+  .doc{
+
+    text-align:right;
+
+  }
+
+
+  .doc h1{
+
+    font-size:22px;
+
+    margin:0 0 6px;
+
+    color:#2D6A2F;
+
+  }
+
+
+  .docno{
+
+    font-size:12px;
+
+    color:#6B7B6D;
+
+    font-weight:600;
+
+  }
+
+
+  /*
+   * CUSTOMER / ORDER INFO
+   */
+
+  .info{
+
+    display:grid;
+
+    grid-template-columns:
+      1fr 1fr;
+
+    gap:24px;
+
+    padding:22px 0;
+
+    border-bottom:
+      1px solid #E7E2D6;
+
+    font-size:12px;
+
+  }
+
+
+  .label{
+
+    font-size:10px;
+
+    text-transform:uppercase;
+
+    letter-spacing:.08em;
+
+    color:#8A938C;
+
+    margin-bottom:5px;
+
+  }
+
+
+  .value{
+
+    font-weight:600;
+
+  }
+
+
+  /*
+   * ITEMS TABLE
+   */
+
+  table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    margin-top:24px;
+
+    font-size:12.5px;
+
+  }
+
+
+  th{
+
+    font-size:10px;
+
+    text-transform:uppercase;
+
+    letter-spacing:.05em;
+
+    color:#6B7B6D;
+
+    text-align:left;
+
+    border-bottom:
+      1px solid #CFCFCF;
+
+    padding:9px 7px;
+
+  }
+
+
+  td{
+
+    padding:11px 7px;
+
+    border-bottom:
+      1px solid #E7E2D6;
+
+    vertical-align:top;
+
+  }
+
+
+  th:nth-child(n+2),
+  td:nth-child(n+2){
+
+    text-align:right;
+
+  }
+
+
+  td small{
+
+    display:block;
+
+    color:#6B7B6D;
+
+    margin-top:3px;
+
+    font-size:10.5px;
+
+  }
+
+
+  .total td{
+
+    font-size:14px;
+
+    font-weight:700;
+
+    border-bottom:0;
+
+    padding-top:17px;
+
+  }
+
+
+  .total td:last-child{
+
+    color:#2D6A2F;
+
+  }
+
+
+  /*
+   * PAYMENT STATUS
+   */
+
+  .status{
+
+    margin-top:20px;
+
+    padding:11px 14px;
+
+    border:
+      1px solid #DDE8DE;
+
+    border-radius:8px;
+
+    background:#F7FAF7;
+
+    color:#2D6A2F;
+
+    font-size:11.5px;
+
+    font-weight:600;
+
+    text-align:center;
+
+  }
+
+
+  /*
+   * FOOTER
+   */
+
+  .footer{
+
+    margin-top:28px;
+
+    padding-top:16px;
+
+    border-top:
+      1px solid #E7E2D6;
+
+    text-align:center;
+
+    color:#7B847D;
+
+    font-size:10.5px;
+
+    line-height:1.6;
+
+  }
+
+
+  .footer strong{
+
+    color:#1F2A22;
+
+  }
+
+
+  /*
+   * PRINT BUTTON
+   */
+
+  .actions{
+
+    text-align:center;
+
+    margin-top:24px;
+
+  }
+
+
+  .actions button{
+
+    padding:10px 18px;
+
+    border:0;
+
+    border-radius:6px;
+
+    background:#2D6A2F;
+
+    color:#fff;
+
+    font-size:12px;
+
+    cursor:pointer;
+
+  }
+
+
+  /*
+   * PRINT VERSION
+   */
+
+  @media print{
+
+    body{
+
+      background:#fff;
+
+    }
+
+    .paper{
+
+      padding:20px 24px;
+
+      max-width:none;
+
+    }
+
+    .actions{
+
+      display:none;
+
+    }
+
+  }
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="paper">
+
+
+  <!-- ================= HEADER ================= -->
+
+  <div class="top">
+
+    <div class="brand-area">
+
+      <!-- EXACT WEBSITE WEB-ICON LOGO -->
+
+      <img
+        class="brand-logo"
+        src="${BUSINESS_INFO.logo}"
+        alt="Melonthies"
+      >
+
+      <div>
+
+        <!-- EXACT WEBSITE BRAND -->
+
+        <div class="brand">
+          Melon<em>thies</em>
+        </div>
+
+        <div class="tag">
+          ${escapeHtml(
+            BUSINESS_INFO.tagline
+          )}
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="doc">
+
+      <h1>
+        ${docLabel}
+      </h1>
+
+      <!-- DATE ONLY -->
+
+      <div class="docno">
+
+        ${docNo}
+        ·
+        ${escapeHtml(
+          saleDate
+        )}
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================= CUSTOMER INFO ================= -->
+
+  <div class="info">
+
+    <div>
+
+      <div class="label">
+        Customer
+      </div>
+
+      <div class="value">
+
+        ${escapeHtml(
+          sale.Customer ||
+          'Walk-in customer'
+        )}
+
+      </div>
+
+    </div>
+
+
+    <div>
+
+      <div class="label">
+        Order
+      </div>
+
+      <div class="value">
+        #${displayNo}
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ================= ITEMS ================= -->
+
+  <table>
+
+    <thead>
+
+      <tr>
+
+        <th>
+          Item
+        </th>
+
+        <th>
+          Qty
+        </th>
+
+        <th>
+          Unit price
+        </th>
+
+        <th>
+          Total
+        </th>
+
+      </tr>
+
+    </thead>
+
+
+    <tbody>
+
+      ${itemRowsHtml}
+
+
+      <tr class="total">
+
+        <td colspan="3">
+          Total
+        </td>
+
+        <td>
+          ${lineTotal}
+        </td>
+
+      </tr>
+
+    </tbody>
+
+  </table>
+
+
+  <!-- ================= PAYMENT ================= -->
+
+  <div class="status">
+
+    ${escapeHtml(
+      statusLine
+    )}
+
+  </div>
+
+
+  <!-- ================= FOOTER ================= -->
+
+  <div class="footer">
+
+    <strong>
+      ${escapeHtml(
+        BUSINESS_INFO.name
+      )}
+    </strong>
+
+    ·
+
+    ${escapeHtml(
+      BUSINESS_INFO.address
+    )}
+
+    <br>
+
+    ${escapeHtml(
+      BUSINESS_INFO.phone
+    )}
+
+    ${
+      sale.Channel
+        ? ' · ' +
+          escapeHtml(
+            sale.Channel
+          )
+        : ''
+    }
+
+    ${
+      sale.Notes
+        ? '<br>' +
+          escapeHtml(
+            sale.Notes
+          )
+        : ''
+    }
+
+  </div>
+
+
+  <!-- ================= PRINT ================= -->
+
+  <div class="actions">
+
+    <button
+      onclick="window.print()"
+    >
+      Print / Save as PDF
+    </button>
+
+  </div>
+
+
+</div>
+
+</body>
+
+</html>
+
+`;
+
+}
+
+
+function escapeHtml(s){
+
+  return String(
+    s == null ? '' : s
+  ).replace(
+    /[&<>"']/g,
+    c => ({
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;',
+      "'":'&#39;'
+    }[c])
+  );
+
+}
 // ---------- DASHBOARD ----------
 function renderDashboard(el){
   const days = STATE.dashDays;
