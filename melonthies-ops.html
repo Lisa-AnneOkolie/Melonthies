@@ -887,6 +887,8 @@ function generateDocHTML(sale, kind){
 // Prints via the browser's native print dialog.
 // Dates are displayed as YYYY-MM-DD only.
 // Uses the exact Melonthies logo from BUSINESS_INFO.logo.
+// Products are shown clearly in the table.
+// Qty represents the total quantity ordered for each item.
 
 function openDoc(sale, kind){
 
@@ -921,22 +923,12 @@ function openDoc(sale, kind){
       w.print();
     }catch(e){}
   },300);
-
 }
 
 
-/*
- * DATE FORMATTER
- *
- * Converts:
- *
- * 2026-08-05
- * 2026-08-05T07:00:00.000Z
- *
- * into:
- *
- * 2026-08-05
- */
+/* =========================================================
+DATE FORMATTER
+========================================================= */
 
 function formatDocDate(value){
 
@@ -946,50 +938,48 @@ function formatDocDate(value){
 
   const str = String(value);
 
-  /*
-   * If the value is already:
-   * YYYY-MM-DD
-   */
+  // Already YYYY-MM-DD
   if(
     /^\d{4}-\d{2}-\d{2}$/.test(str)
   ){
     return str;
   }
 
-  /*
-   * If the value is an ISO timestamp:
-   * 2026-08-05T07:00:00.000Z
-   *
-   * Only take the date before "T".
-   */
+  // ISO timestamp
+  // Example:
+  // 2026-08-05T07:00:00.000Z
   if(str.indexOf('T') !== -1){
     return str.split('T')[0];
   }
 
-  /*
-   * Handle actual JavaScript Date objects.
-   */
+  // JavaScript Date object
   if(value instanceof Date){
 
     if(isNaN(value.getTime())){
       return '';
     }
 
-    return value.toISOString().split('T')[0];
+    return value
+      .toISOString()
+      .split('T')[0];
   }
 
-  /*
-   * Final fallback.
-   */
+  // Final fallback
   const d = new Date(value);
 
   if(!isNaN(d.getTime())){
-    return d.toISOString().split('T')[0];
+    return d
+      .toISOString()
+      .split('T')[0];
   }
 
   return str;
 }
 
+
+/* =========================================================
+GENERATE INVOICE / RECEIPT
+========================================================= */
 
 function generateDocHTML(sale, kind){
 
@@ -1002,9 +992,10 @@ function generateDocHTML(sale, kind){
       : 'Invoice';
 
 
-  /*
-   * Order number
-   */
+  /* -------------------------------------------------------
+  ORDER NUMBER
+  ------------------------------------------------------- */
+
   const orderNo =
     Number(sale.OrderNo) || 0;
 
@@ -1031,12 +1022,10 @@ function generateDocHTML(sale, kind){
     displayNo.padStart(4,'0');
 
 
-  /*
-   * DATE
-   *
-   * Always YYYY-MM-DD.
-   * Never show T07:00:00.000Z.
-   */
+  /* -------------------------------------------------------
+  DATE
+  ------------------------------------------------------- */
+
   const saleDate =
     formatDocDate(
       sale.Date
@@ -1048,15 +1037,20 @@ function generateDocHTML(sale, kind){
     );
 
 
+  /* -------------------------------------------------------
+  TOTAL
+  ------------------------------------------------------- */
+
   const lineTotal =
     fmtMoney(
       sale.Total
     );
 
 
-  /*
-   * Invoice / receipt status line.
-   */
+  /* -------------------------------------------------------
+  STATUS / PAYMENT
+  ------------------------------------------------------- */
+
   const statusLine =
     isReceipt
 
@@ -1065,9 +1059,10 @@ function generateDocHTML(sale, kind){
       : `Payment: ${BUSINESS_INFO.bank} · ${BUSINESS_INFO.accountnumber}`;
 
 
-  /*
-   * Get line items.
-   */
+  /* -------------------------------------------------------
+  GET ITEMS
+  ------------------------------------------------------- */
+
   let items = [];
 
   try{
@@ -1086,9 +1081,10 @@ function generateDocHTML(sale, kind){
   }
 
 
-  /*
-   * Fallback for older single-product sales.
-   */
+  /* -------------------------------------------------------
+  FALLBACK FOR OLDER SALES
+  ------------------------------------------------------- */
+
   const rows =
     items.length
 
@@ -1112,65 +1108,101 @@ function generateDocHTML(sale, kind){
         }];
 
 
-  /*
-   * Build product rows.
-   */
+  /* -------------------------------------------------------
+  TOTAL QUANTITY
+  ------------------------------------------------------- */
+
+  const totalQty =
+    rows.reduce(
+      (total, item) =>
+        total +
+        (
+          Number(
+            item.Quantity
+          ) || 0
+        ),
+      0
+    );
+
+
+  /* -------------------------------------------------------
+  BUILD PRODUCT ROWS
+  ------------------------------------------------------- */
+
   const itemRowsHtml =
     rows
-      .map(li => `
+      .map(li => {
 
-        <tr>
+        const qty =
+          Number(
+            li.Quantity
+          ) || 0;
 
-          <td>
-            <strong>
-              ${escapeHtml(
-                li.ProductName
+        const unitPrice =
+          Number(
+            li.UnitPrice
+          ) || 0;
+
+        const itemTotal =
+          li.LineTotal != null
+            ? Number(
+                li.LineTotal
+              ) || 0
+            : qty * unitPrice;
+
+        return `
+
+          <tr>
+
+            <td class="item-cell">
+
+              <strong>
+                ${escapeHtml(
+                  li.ProductName
+                )}
+              </strong>
+
+              ${
+                li.Size
+                  ? `
+                    <small>
+                      ${escapeHtml(
+                        li.Size
+                      )}
+                    </small>
+                  `
+                  : ''
+              }
+
+            </td>
+
+            <td class="qty-cell">
+              ${qty}
+            </td>
+
+            <td class="price-cell">
+              ${fmtMoney(
+                unitPrice
               )}
-            </strong>
+            </td>
 
-            <small>
-              ${escapeHtml(
-                li.Size || ''
+            <td class="total-cell">
+              ${fmtMoney(
+                itemTotal
               )}
-            </small>
-          </td>
+            </td>
 
-          <td>
-            ${li.Quantity}
-          </td>
+          </tr>
 
-          <td>
-            ${fmtMoney(
-              li.UnitPrice
-            )}
-          </td>
+        `;
 
-          <td>
-            ${fmtMoney(
-              li.LineTotal
-            )}
-          </td>
-
-        </tr>
-
-      `)
+      })
       .join('');
 
 
-  /*
-   * IMPORTANT:
-   *
-   * BUSINESS_INFO.logo is the SAME
-   * base64 logo used by the website
-   * favicon/web icon.
-   *
-   * BUSINESS_INFO.name is:
-   * Melonthies
-   *
-   * The visual brand below uses:
-   * Melon + italic thies
-   * to match the website.
-   */
+  /* -------------------------------------------------------
+  RETURN DOCUMENT
+  ------------------------------------------------------- */
 
   return `
 
@@ -1191,6 +1223,7 @@ function generateDocHTML(sale, kind){
   *{
     box-sizing:border-box;
   }
+
 
   body{
 
@@ -1223,9 +1256,9 @@ function generateDocHTML(sale, kind){
   }
 
 
-  /*
-   * HEADER
-   */
+  /* =====================================================
+     HEADER
+  ===================================================== */
 
   .top{
 
@@ -1280,11 +1313,6 @@ function generateDocHTML(sale, kind){
   }
 
 
-  /*
-   * Match website branding:
-   * Melon + italic thies
-   */
-
   .brand em{
 
     font-style:italic;
@@ -1334,9 +1362,9 @@ function generateDocHTML(sale, kind){
   }
 
 
-  /*
-   * CUSTOMER / ORDER INFO
-   */
+  /* =====================================================
+     CUSTOMER / ORDER INFO
+  ===================================================== */
 
   .info{
 
@@ -1379,9 +1407,9 @@ function generateDocHTML(sale, kind){
   }
 
 
-  /*
-   * ITEMS TABLE
-   */
+  /* =====================================================
+     ITEMS TABLE
+  ===================================================== */
 
   table{
 
@@ -1418,7 +1446,7 @@ function generateDocHTML(sale, kind){
 
   td{
 
-    padding:11px 7px;
+    padding:12px 7px;
 
     border-bottom:
       1px solid #E7E2D6;
@@ -1428,10 +1456,50 @@ function generateDocHTML(sale, kind){
   }
 
 
-  th:nth-child(n+2),
-  td:nth-child(n+2){
+  /* Item */
+
+  .item-cell{
+
+    width:45%;
+
+    text-align:left;
+
+  }
+
+
+  /* Quantity */
+
+  .qty-cell{
+
+    width:12%;
+
+    text-align:center;
+
+    font-weight:600;
+
+  }
+
+
+  /* Unit price */
+
+  .price-cell{
+
+    width:21%;
 
     text-align:right;
+
+  }
+
+
+  /* Total */
+
+  .total-cell{
+
+    width:22%;
+
+    text-align:right;
+
+    font-weight:600;
 
   }
 
@@ -1442,12 +1510,16 @@ function generateDocHTML(sale, kind){
 
     color:#6B7B6D;
 
-    margin-top:3px;
+    margin-top:4px;
 
     font-size:10.5px;
 
   }
 
+
+  /* =====================================================
+     TOTAL ROW
+  ===================================================== */
 
   .total td{
 
@@ -1457,7 +1529,7 @@ function generateDocHTML(sale, kind){
 
     border-bottom:0;
 
-    padding-top:17px;
+    padding-top:18px;
 
   }
 
@@ -1469,9 +1541,9 @@ function generateDocHTML(sale, kind){
   }
 
 
-  /*
-   * PAYMENT STATUS
-   */
+  /* =====================================================
+     PAYMENT STATUS
+  ===================================================== */
 
   .status{
 
@@ -1497,9 +1569,9 @@ function generateDocHTML(sale, kind){
   }
 
 
-  /*
-   * FOOTER
-   */
+  /* =====================================================
+     FOOTER
+  ===================================================== */
 
   .footer{
 
@@ -1528,9 +1600,9 @@ function generateDocHTML(sale, kind){
   }
 
 
-  /*
-   * PRINT BUTTON
-   */
+  /* =====================================================
+     PRINT BUTTON
+  ===================================================== */
 
   .actions{
 
@@ -1560,9 +1632,9 @@ function generateDocHTML(sale, kind){
   }
 
 
-  /*
-   * PRINT VERSION
-   */
+  /* =====================================================
+     PRINT VERSION
+  ===================================================== */
 
   @media print{
 
@@ -1595,74 +1667,99 @@ function generateDocHTML(sale, kind){
 
 <body>
 
+
 <div class="paper">
 
 
-  <!-- ================= HEADER ================= -->
+  <!-- =================================================
+       HEADER
+  ================================================= -->
 
   <div class="top">
 
+
     <div class="brand-area">
 
-      <!-- EXACT WEBSITE WEB-ICON LOGO -->
+
+      <!-- EXACT WEBSITE WEB ICON -->
 
       <img
+
         class="brand-logo"
+
         src="${BUSINESS_INFO.logo}"
+
         alt="Melonthies"
+
       >
+
 
       <div>
 
-        <!-- EXACT WEBSITE BRAND -->
 
         <div class="brand">
+
           Melon<em>thies</em>
+
         </div>
 
+
         <div class="tag">
+
           ${escapeHtml(
             BUSINESS_INFO.tagline
           )}
+
         </div>
 
+
       </div>
+
 
     </div>
 
 
     <div class="doc">
 
+
       <h1>
         ${docLabel}
       </h1>
 
-      <!-- DATE ONLY -->
 
       <div class="docno">
 
         ${docNo}
+
         ·
+
         ${escapeHtml(
           saleDate
         )}
 
       </div>
 
+
     </div>
+
 
   </div>
 
 
-  <!-- ================= CUSTOMER INFO ================= -->
+  <!-- =================================================
+       CUSTOMER INFORMATION
+  ================================================= -->
 
   <div class="info">
 
+
     <div>
+
 
       <div class="label">
         Customer
       </div>
+
 
       <div class="value">
 
@@ -1673,76 +1770,119 @@ function generateDocHTML(sale, kind){
 
       </div>
 
+
     </div>
 
 
     <div>
 
+
       <div class="label">
         Order
       </div>
 
+
       <div class="value">
+
         #${displayNo}
+
       </div>
 
+
     </div>
+
 
   </div>
 
 
-  <!-- ================= ITEMS ================= -->
+  <!-- =================================================
+       ITEMS
+  ================================================= -->
 
   <table>
 
+
     <thead>
 
+
       <tr>
+
 
         <th>
           Item
         </th>
 
-        <th>
+
+        <th style="text-align:center;">
           Qty
         </th>
 
-        <th>
+
+        <th style="text-align:right;">
           Unit price
         </th>
 
-        <th>
+
+        <th style="text-align:right;">
           Total
         </th>
 
+
       </tr>
+
 
     </thead>
 
 
     <tbody>
 
+
       ${itemRowsHtml}
 
 
+      <!-- TOTAL ORDER ROW -->
+
       <tr class="total">
 
-        <td colspan="3">
+
+        <td colspan="1">
+
           Total
+
         </td>
 
-        <td>
-          ${lineTotal}
+
+        <td
+          style="text-align:center;"
+        >
+
+          ${totalQty}
+
         </td>
+
+
+        <td></td>
+
+
+        <td>
+
+          ${lineTotal}
+
+        </td>
+
 
       </tr>
 
+
     </tbody>
+
 
   </table>
 
 
-  <!-- ================= PAYMENT ================= -->
+  <!-- =================================================
+       PAYMENT STATUS
+  ================================================= -->
 
   <div class="status">
 
@@ -1753,65 +1893,91 @@ function generateDocHTML(sale, kind){
   </div>
 
 
-  <!-- ================= FOOTER ================= -->
+  <!-- =================================================
+       FOOTER
+  ================================================= -->
 
   <div class="footer">
 
+
     <strong>
+
       ${escapeHtml(
         BUSINESS_INFO.name
       )}
+
     </strong>
 
+
     ·
+
 
     ${escapeHtml(
       BUSINESS_INFO.address
     )}
 
+
     <br>
+
 
     ${escapeHtml(
       BUSINESS_INFO.phone
     )}
 
+
     ${
       sale.Channel
+
         ? ' · ' +
+
           escapeHtml(
             sale.Channel
           )
+
         : ''
     }
 
+
     ${
       sale.Notes
+
         ? '<br>' +
+
           escapeHtml(
             sale.Notes
           )
+
         : ''
     }
+
 
   </div>
 
 
-  <!-- ================= PRINT ================= -->
+  <!-- =================================================
+       PRINT
+  ================================================= -->
 
   <div class="actions">
+
 
     <button
       onclick="window.print()"
     >
+
       Print / Save as PDF
+
     </button>
+
 
   </div>
 
 
 </div>
 
+
 </body>
+
 
 </html>
 
@@ -1819,6 +1985,10 @@ function generateDocHTML(sale, kind){
 
 }
 
+
+/* =========================================================
+ESCAPE HTML
+========================================================= */
 
 function escapeHtml(s){
 
