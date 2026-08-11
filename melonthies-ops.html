@@ -779,37 +779,836 @@ function renderProductionForm(inner){
 
 // ---- Sales form ----
 function renderSaleForm(inner, existing){
-  const pricing = STATE.db.Pricing||[];
+
+  const pricing =
+    STATE.db.Pricing || [];
+
+  const items =
+    existing && existing.ItemsJSON
+      ? (() => {
+          try {
+            return JSON.parse(
+              existing.ItemsJSON
+            );
+          } catch(e) {
+            return [];
+          }
+        })()
+      : existing
+        ? [{
+            ProductName:
+              existing.ProductName || '',
+            Size:
+              existing.Size || '',
+            Quantity:
+              existing.Quantity || 1,
+            UnitPrice:
+              existing.UnitPrice || 0,
+            LineTotal:
+              existing.Total || 0
+          }]
+        : [];
+
+
   inner.innerHTML = `
+
     <div class="field-row">
-      <div class="fld"><label>Date *</label><input id="f_Date" type="date" value="${existing?existing.Date:todayStr()}"></div>
-      <div class="fld"><label>Product *</label>
-        <select id="f_Product">${pricing.map(p=>`<option value="${p.ProductName}|${p.Size}" data-price="${p.SellingPrice}" ${existing&&existing.ProductName===p.ProductName?'selected':''}>${p.ProductName} — ${p.Size}</option>`).join('') || '<option value="">Add a Pricing entry first</option>'}</select>
+
+      <div class="fld">
+
+        <label>Date *</label>
+
+        <input
+          id="f_Date"
+          type="date"
+          value="${
+            existing
+              ? existing.Date
+              : todayStr()
+          }"
+        >
+
       </div>
+
+
+      <div class="fld">
+
+        <label>Channel</label>
+
+        <select id="f_Channel">
+
+          ${
+            [
+              'WhatsApp',
+              'Walk-in',
+              'Delivery',
+              'Instagram'
+            ]
+              .map(c => `
+                <option
+                  ${
+                    existing &&
+                    existing.Channel === c
+                      ? 'selected'
+                      : ''
+                  }
+                >
+                  ${c}
+                </option>
+              `)
+              .join('')
+          }
+
+        </select>
+
+      </div>
+
     </div>
+
+
     <div class="field-row">
-      <div class="fld"><label>Quantity *</label><input id="f_Quantity" type="number" step="any" value="${existing?existing.Quantity:1}"></div>
-      <div class="fld"><label>Unit price (₦) *</label><input id="f_UnitPrice" type="number" step="any" value="${existing?existing.UnitPrice:''}"></div>
-      <div class="fld"><label>Channel</label>
-        <select id="f_Channel">${['WhatsApp','Walk-in','Delivery','Instagram'].map(c=>`<option ${existing&&existing.Channel===c?'selected':''}>${c}</option>`).join('')}</select>
+
+      <div class="fld">
+
+        <label>Customer</label>
+
+        <input
+          id="f_Customer"
+          type="text"
+          placeholder="Customer name"
+          value="${
+            existing
+              ? escapeHtml(existing.Customer || '')
+              : ''
+          }"
+        >
+
       </div>
-    </div> 
-    <div class="fld"><label>Notes</label><textarea id="f_Notes">${existing?existing.Notes:''}</textarea></div>
-    <div class="hint">Deducts the sold quantity from Inventory's finished-goods stock for this product. New sales start as “Invoiced” — use “Mark paid” on the table once payment lands to unlock the Receipt.</div>
+
+
+      <div class="fld">
+
+        <label>Notes</label>
+
+        <input
+          id="f_Notes"
+          type="text"
+          placeholder="Optional notes"
+          value="${
+            existing
+              ? escapeHtml(existing.Notes || '')
+              : ''
+          }"
+        >
+
+      </div>
+
+    </div>
+
+
+    <div style="
+      margin-top:18px;
+      margin-bottom:10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    ">
+
+      <div>
+
+        <strong>
+          Products in this sale
+        </strong>
+
+        <div class="hint">
+          Add multiple products to one order.
+        </div>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="btn sm"
+        id="addSaleItem"
+      >
+        + Add product
+      </button>
+
+    </div>
+
+
+    <div
+      id="saleItems"
+      style="
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+      "
+    ></div>
+
+
+    <div
+      style="
+        margin-top:18px;
+        padding:15px;
+        border-radius:10px;
+        background:#F7FAF7;
+        border:1px solid #DDE8DE;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+      "
+    >
+
+      <div>
+
+        <div
+          style="
+            font-size:11px;
+            color:#6B7B6D;
+            text-transform:uppercase;
+          "
+        >
+          Order total
+        </div>
+
+        <strong
+          id="saleGrandTotal"
+          style="
+            font-size:20px;
+            color:#2D6A2F;
+          "
+        >
+          ₦0
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <div class="hint" style="margin-top:12px;">
+
+      New sales start as “Invoiced”.
+      Use “Mark paid” on the sales table once payment lands.
+
+    </div>
+
   `;
-  const sel = document.getElementById('f_Product');
-  sel.addEventListener('change', ()=>{
-    const opt = sel.options[sel.selectedIndex];
-    if(opt && opt.dataset.price) document.getElementById('f_UnitPrice').value = opt.dataset.price;
-  });
-  document.getElementById('saveForm').addEventListener('click', async ()=>{
-    const [prod, size] = (sel.value||'').split('|');
-    const payload = { Date: val('f_Date'), ProductName: prod||'', Size: size||'', Quantity: val('f_Quantity'),
-      UnitPrice: val('f_UnitPrice'), Channel: val('f_Channel'), Customer: val('f_Customer'), Notes: val('f_Notes') };
-    if(existing) payload.ID = existing.ID;
-    const r = await apiPost(existing?'update':'add', 'Sales', payload);
-    if(r.ok){ STATE.db=r.data; closeModal(); toast('Sale logged.'); renderView(STATE.view); } else toast(r.error||'Failed', true);
-  });
+
+
+  const itemsContainer =
+    document.getElementById(
+      'saleItems'
+    );
+
+
+  /* =====================================================
+     PRODUCT OPTIONS
+  ===================================================== */
+
+  function productOptions(selectedProduct, selectedSize){
+
+    return (
+
+      pricing
+        .map(function(p){
+
+          const value =
+            p.ProductName +
+            '|' +
+            p.Size;
+
+          const selected =
+            selectedProduct === p.ProductName &&
+            selectedSize === p.Size
+              ? 'selected'
+              : '';
+
+          return `
+            <option
+              value="${escapeHtml(value)}"
+              data-price="${Number(p.SellingPrice) || 0}"
+              ${selected}
+            >
+              ${escapeHtml(p.ProductName)}
+              — ${escapeHtml(p.Size)}
+            </option>
+          `;
+
+        })
+        .join('')
+
+      || `
+        <option value="">
+          Add a Pricing entry first
+        </option>
+      `
+
+    );
+
+  }
+
+
+  /* =====================================================
+     ADD ITEM ROW
+  ===================================================== */
+
+  function addItemRow(item){
+
+    const row =
+      document.createElement('div');
+
+    row.className =
+      'sale-item-row';
+
+    row.style.cssText = `
+      display:grid;
+      grid-template-columns:
+        minmax(180px, 2fr)
+        90px
+        130px
+        130px
+        42px;
+      gap:8px;
+      align-items:end;
+      padding:12px;
+      border:1px solid #E7E2D6;
+      border-radius:10px;
+      background:#fff;
+    `;
+
+
+    row.innerHTML = `
+
+      <div class="fld">
+
+        <label>Product</label>
+
+        <select class="sale-product">
+
+          ${productOptions(
+            item
+              ? item.ProductName
+              : '',
+            item
+              ? item.Size
+              : ''
+          )}
+
+        </select>
+
+      </div>
+
+
+      <div class="fld">
+
+        <label>Qty</label>
+
+        <input
+          class="sale-qty"
+          type="number"
+          min="1"
+          step="1"
+          value="${
+            item
+              ? Number(item.Quantity) || 1
+              : 1
+          }"
+        >
+
+      </div>
+
+
+      <div class="fld">
+
+        <label>Unit price</label>
+
+        <input
+          class="sale-price"
+          type="number"
+          min="0"
+          step="any"
+          value="${
+            item
+              ? Number(item.UnitPrice) || 0
+              : ''
+          }"
+        >
+
+      </div>
+
+
+      <div class="fld">
+
+        <label>Line total</label>
+
+        <input
+          class="sale-line-total"
+          type="text"
+          value="₦0"
+          readonly
+        >
+
+      </div>
+
+
+      <button
+        type="button"
+        class="btn ghost sm sale-remove"
+        title="Remove product"
+        style="
+          height:38px;
+          padding:0;
+          font-size:18px;
+        "
+      >
+        ×
+      </button>
+
+    `;
+
+
+    itemsContainer.appendChild(row);
+
+
+    const product =
+      row.querySelector(
+        '.sale-product'
+      );
+
+    const qty =
+      row.querySelector(
+        '.sale-qty'
+      );
+
+    const price =
+      row.querySelector(
+        '.sale-price'
+      );
+
+    const lineTotal =
+      row.querySelector(
+        '.sale-line-total'
+      );
+
+
+    /* -----------------------------------------
+       AUTO PRICE
+    ----------------------------------------- */
+
+    product.addEventListener(
+      'change',
+      function(){
+
+        const opt =
+          product.options[
+            product.selectedIndex
+          ];
+
+        if(
+          opt &&
+          opt.dataset.price
+        ){
+
+          price.value =
+            opt.dataset.price;
+
+        }
+
+        updateTotals();
+
+      }
+    );
+
+
+    qty.addEventListener(
+      'input',
+      updateTotals
+    );
+
+    price.addEventListener(
+      'input',
+      updateTotals
+    );
+
+
+    row
+      .querySelector(
+        '.sale-remove'
+      )
+      .addEventListener(
+        'click',
+        function(){
+
+          row.remove();
+
+          updateTotals();
+
+        }
+      );
+
+
+    updateTotals();
+
+  }
+
+
+  /* =====================================================
+     CALCULATE TOTALS
+  ===================================================== */
+
+  function updateTotals(){
+
+    let grandTotal = 0;
+
+
+    itemsContainer
+      .querySelectorAll(
+        '.sale-item-row'
+      )
+      .forEach(function(row){
+
+        const qty =
+          Number(
+            row.querySelector(
+              '.sale-qty'
+            ).value
+          ) || 0;
+
+        const price =
+          Number(
+            row.querySelector(
+              '.sale-price'
+            ).value
+          ) || 0;
+
+        const total =
+          qty * price;
+
+        row.querySelector(
+          '.sale-line-total'
+        ).value =
+          fmtMoney(total);
+
+        grandTotal += total;
+
+      });
+
+
+    document.getElementById(
+      'saleGrandTotal'
+    ).textContent =
+      fmtMoney(grandTotal);
+
+  }
+
+
+  /* =====================================================
+     ADD PRODUCT BUTTON
+  ===================================================== */
+
+  document.getElementById(
+    'addSaleItem'
+  ).addEventListener(
+    'click',
+    function(){
+
+      addItemRow();
+
+    }
+  );
+
+
+  /* =====================================================
+     EXISTING SALE / NEW SALE
+  ===================================================== */
+
+  if(items.length){
+
+    items.forEach(function(item){
+
+      addItemRow(item);
+
+    });
+
+  }else{
+
+    addItemRow();
+
+  }
+
+
+  /* =====================================================
+     SAVE SALE
+  ===================================================== */
+
+  document
+    .getElementById(
+      'saveForm'
+    )
+    .addEventListener(
+      'click',
+      async function(){
+
+        const rows =
+          Array.from(
+            itemsContainer
+              .querySelectorAll(
+                '.sale-item-row'
+              )
+          );
+
+
+        if(!rows.length){
+
+          toast(
+            'Please add at least one product.',
+            true
+          );
+
+          return;
+
+        }
+
+
+        const saleItems =
+          rows.map(function(row){
+
+            const productValue =
+              row.querySelector(
+                '.sale-product'
+              ).value || '';
+
+            const parts =
+              productValue.split('|');
+
+            const productName =
+              parts[0] || '';
+
+            const size =
+              parts.slice(1).join('|') || '';
+
+            const quantity =
+              Number(
+                row.querySelector(
+                  '.sale-qty'
+                ).value
+              ) || 0;
+
+            const unitPrice =
+              Number(
+                row.querySelector(
+                  '.sale-price'
+                ).value
+              ) || 0;
+
+
+            return {
+
+              ProductName:
+                productName,
+
+              Size:
+                size,
+
+              Quantity:
+                quantity,
+
+              UnitPrice:
+                unitPrice,
+
+              LineTotal:
+                quantity *
+                unitPrice
+
+            };
+
+          });
+
+
+        /* -----------------------------------------
+           VALIDATE
+        ----------------------------------------- */
+
+        const invalid =
+          saleItems.some(function(item){
+
+            return (
+              !item.ProductName ||
+              !item.Size ||
+              item.Quantity <= 0 ||
+              item.UnitPrice < 0
+            );
+
+          });
+
+
+        if(invalid){
+
+          toast(
+            'Please complete every product row.',
+            true
+          );
+
+          return;
+
+        }
+
+
+        const payload = {
+
+          Date:
+            val('f_Date'),
+
+          Channel:
+            val('f_Channel'),
+
+          Customer:
+            val('f_Customer'),
+
+          Notes:
+            val('f_Notes'),
+
+          items:
+            saleItems
+
+        };
+
+
+        if(existing){
+
+          payload.ID =
+            existing.ID;
+
+          /*
+           * IMPORTANT:
+           * The normal update route will update
+           * ItemsJSON, but it will NOT reverse
+           * the old inventory deduction.
+           *
+           * For now, editing an existing multi-item
+           * sale should be handled separately if you
+           * want inventory to automatically reverse
+           * and re-deduct.
+           */
+
+          payload.ItemsJSON =
+            JSON.stringify(
+              saleItems
+            );
+
+          payload.ProductName =
+            saleItems
+              .map(function(i){
+                return (
+                  i.ProductName +
+                  ' x' +
+                  i.Quantity
+                );
+              })
+              .join(', ');
+
+          payload.Size =
+            saleItems.length > 1
+              ? 'Mixed'
+              : saleItems[0].Size;
+
+          const totalQty =
+            saleItems.reduce(
+              function(a,i){
+                return a +
+                  Number(i.Quantity || 0);
+              },
+              0
+            );
+
+          const total =
+            saleItems.reduce(
+              function(a,i){
+                return a +
+                  Number(i.LineTotal || 0);
+              },
+              0
+            );
+
+          payload.Quantity =
+            totalQty;
+
+          payload.UnitPrice =
+            totalQty > 0
+              ? total / totalQty
+              : 0;
+
+          payload.Total =
+            total;
+
+        }
+
+
+        const r =
+          await apiPost(
+            existing
+              ? 'update'
+              : 'add',
+            'Sales',
+            payload
+          );
+
+
+        if(r.ok){
+
+          STATE.db =
+            r.data;
+
+          closeModal();
+
+          toast(
+            existing
+              ? 'Sale updated.'
+              : 'Sale logged.'
+          );
+
+          renderView(
+            STATE.view
+          );
+
+        }else{
+
+          toast(
+            r.error ||
+            'Failed to save sale.',
+            true
+          );
+
+        }
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+FORM HELPERS
+========================================================= */
+
+function val(id){
+
+  return document
+    .getElementById(id)
+    .value;
+
+}
+
+
+function todayStr(){
+
+  return new Date()
+    .toISOString()
+    .slice(0,10);
+
 }
 
 function val(id){ return document.getElementById(id).value; }
