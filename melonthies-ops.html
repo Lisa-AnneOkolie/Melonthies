@@ -299,7 +299,7 @@ async function tryLogin(){
     localStorage.setItem('mt_ops_token', pass);
     await boot();
   }catch(err){
-    errEl.textContent = 'Could not reach backend. Check the API URL / your connection.';
+    errEl.textContent = 'Could not reach backend. Check your network connection.';
   }
 }
 
